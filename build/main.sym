@@ -34,7 +34,7 @@ Symbol Table
   2 _enemySpriteIndex                                               00000122 GR
   2 _enemy_x                                                        00000120 GR
   2 _enemy_y                                                        00000121 GR
-  0 _fire_bullets                                                   00000038 GR
+  0 _fire_bullets                                                   0000003F GR
   2 _hero                                                           00000000 GR
   2 _hero2                                                          00000040 GR
   2 _heroSpriteIndex                                                00000127 GR
@@ -42,20 +42,20 @@ Symbol Table
   2 _hero_y                                                         00000126 GR
   0 _initialize_bullets                                             00000000 GR
     _joypad                                                         ******** GX
-  0 _main                                                           000005E5 GR
+  0 _main                                                           00000620 GR
     _set_sprite_data                                                ******** GX
     _shadow_OAM                                                     ******** GX
-  0 _update_bullets                                                 00000232 GR
-  0 _update_enemy_sprite                                            0000040C GR
-  0 _update_hero_sprite                                             00000511 GR
+  0 _update_bullets                                                 0000024F GR
+  0 _update_enemy_sprite                                            00000447 GR
+  0 _update_hero_sprite                                             0000054C GR
 
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (GameBoy)                  Page 2
 Hexadecimal [32-Bits]
 
 Area Table
 
-   0 _CODE                                      size      6C8   flags    0
-   1 _DATA                                      size       3C   flags    0
+   0 _CODE                                      size      703   flags    0
+   1 _DATA                                      size       46   flags    0
    2 _INITIALIZED                               size      128   flags    0
    3 _DABS                                      size        0   flags    8
    4 _HOME                                      size        0   flags    0

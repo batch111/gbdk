@@ -24,7 +24,8 @@ UINT8 heroSpriteIndex = 0;
 struct Bullet {
     UINT8 x;
     UINT8 y;
-    INT8 direction; // -1 pour la gauche, 1 pour la droite
+    INT8 directionX; // -1 pour la gauche, 1 pour la droite
+    INT8 directionY; // -1 pour le haut, 1 pour le bas
     UINT8 active;
     UINT8 animationCounter;
     UINT8 spriteIndex;
@@ -37,7 +38,8 @@ void initialize_bullets() {
     for (UINT8 i = 0; i < MAX_BULLETS; i++) {
         bullets[i].x = 0;
         bullets[i].y = 0;
-        bullets[i].direction = 1;
+        bullets[i].directionX = 0; // Initialiser à 0
+        bullets[i].directionY = 0; // Initialiser à 0
         bullets[i].active = 0;
         bullets[i].animationCounter = 0;
         bullets[i].spriteIndex = 0;
@@ -50,17 +52,19 @@ void fire_bullets() {
         if (!bullets[i].active && !bullets[i + 1].active) {
             bullets[i].x = hero_x;
             bullets[i].y = hero_y;
-            bullets[i].direction = 1; // Droite
+            bullets[i].directionX = -1; // Gauche
+            bullets[i].directionY = -1; // Haut
             bullets[i].active = 1;
 
             bullets[i + 1].x = hero_x;
             bullets[i + 1].y = hero_y;
-            bullets[i + 1].direction = -1; // Gauche
+            bullets[i + 1].directionX = 1; // Droite
+            bullets[i + 1].directionY = 1; // Bas
             bullets[i + 1].active = 1;
 
             // On utilise deux sprites (un pour chaque direction)
-            set_sprite_tile(8 + i, 16);      // Première frame (bullet) pour la droite
-            set_sprite_tile(8 + i + 1, 17);  // Deuxième frame (bullet2) pour la gauche
+            set_sprite_tile(8 + i, 16);      // Première frame (bullet) pour la gauche
+            set_sprite_tile(8 + i + 1, 17);  // Deuxième frame (bullet2) pour la droite
 
             move_sprite(8 + i, bullets[i].x, bullets[i].y);
             move_sprite(8 + i + 1, bullets[i + 1].x, bullets[i + 1].y);
@@ -73,7 +77,8 @@ void fire_bullets() {
 void update_bullets() {
     for (UINT8 i = 0; i < MAX_BULLETS; i++) {
         if (bullets[i].active) {
-            bullets[i].x += bullets[i].direction * 4;
+            bullets[i].x += bullets[i].directionX * 4; // Mise à jour de la position X
+            bullets[i].y += bullets[i].directionY * 4; // Mise à jour de la position Y
 
             move_sprite(8 + i, bullets[i].x, bullets[i].y);
 
@@ -87,6 +92,7 @@ void update_bullets() {
 
             // Désactiver si hors écran ou collision avec l'ennemi
             if (bullets[i].x > 160 || bullets[i].x < 0 ||
+                bullets[i].y > 160 || bullets[i].y < 0 || // Vérification de la limite Y
                 (bullets[i].x > enemy_x - 8 && bullets[i].x < enemy_x + 8 &&
                  bullets[i].y > enemy_y - 8 && bullets[i].y < enemy_y + 8)) {
                 bullets[i].active = 0;
