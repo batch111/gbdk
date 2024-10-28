@@ -1,0 +1,4 @@
+unsigned char windowHeroMetric25[] =
+{
+  0x1A,0x20, 0x03, 0x06
+};
