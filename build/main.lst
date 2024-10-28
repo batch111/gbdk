@@ -11,842 +11,1775 @@
                                      11 	.globl _main
                                      12 	.globl _update_hero_sprite
                                      13 	.globl _update_enemy_sprite
-                                     14 	.globl _set_sprite_data
-                                     15 	.globl _joypad
-                                     16 	.globl _delay
-                                     17 	.globl _heroSpriteIndex
-                                     18 	.globl _hero_y
-                                     19 	.globl _hero_x
-                                     20 	.globl _enemyAnimationCounter
-                                     21 	.globl _enemySpeed
-                                     22 	.globl _enemySpriteIndex
-                                     23 	.globl _enemy_y
-                                     24 	.globl _enemy_x
-                                     25 	.globl _enemy2
-                                     26 	.globl _enemy
-                                     27 	.globl _hero2
-                                     28 	.globl _hero
-                                     29 ;--------------------------------------------------------
-                                     30 ; special function registers
-                                     31 ;--------------------------------------------------------
-                                     32 ;--------------------------------------------------------
-                                     33 ; ram data
-                                     34 ;--------------------------------------------------------
-                                     35 	.area _DATA
-                                     36 ;--------------------------------------------------------
-                                     37 ; ram data
+                                     14 	.globl _update_bullets
+                                     15 	.globl _fire_bullets
+                                     16 	.globl _initialize_bullets
+                                     17 	.globl _set_sprite_data
+                                     18 	.globl _joypad
+                                     19 	.globl _delay
+                                     20 	.globl _heroSpriteIndex
+                                     21 	.globl _hero_y
+                                     22 	.globl _hero_x
+                                     23 	.globl _enemyAnimationCounter
+                                     24 	.globl _enemySpeed
+                                     25 	.globl _enemySpriteIndex
+                                     26 	.globl _enemy_y
+                                     27 	.globl _enemy_x
+                                     28 	.globl _bullet2
+                                     29 	.globl _bullet
+                                     30 	.globl _enemy2
+                                     31 	.globl _enemy
+                                     32 	.globl _hero2
+                                     33 	.globl _hero
+                                     34 	.globl _bullets
+                                     35 ;--------------------------------------------------------
+                                     36 ; special function registers
+                                     37 ;--------------------------------------------------------
                                      38 ;--------------------------------------------------------
-                                     39 	.area _INITIALIZED
-    00000000                         40 _hero::
-    00000000                         41 	.ds 64
-    00000040                         42 _hero2::
-    00000040                         43 	.ds 64
-    00000080                         44 _enemy::
-    00000080                         45 	.ds 64
-    000000C0                         46 _enemy2::
-    000000C0                         47 	.ds 64
-    00000100                         48 _enemy_x::
-    00000100                         49 	.ds 1
-    00000101                         50 _enemy_y::
-    00000101                         51 	.ds 1
-    00000102                         52 _enemySpriteIndex::
-    00000102                         53 	.ds 1
-    00000103                         54 _enemySpeed::
-    00000103                         55 	.ds 1
-    00000104                         56 _enemyAnimationCounter::
-    00000104                         57 	.ds 1
-    00000105                         58 _hero_x::
-    00000105                         59 	.ds 1
-    00000106                         60 _hero_y::
-    00000106                         61 	.ds 1
-    00000107                         62 _heroSpriteIndex::
-    00000107                         63 	.ds 1
-                                     64 ;--------------------------------------------------------
-                                     65 ; absolute external ram data
-                                     66 ;--------------------------------------------------------
-                                     67 	.area _DABS (ABS)
-                                     68 ;--------------------------------------------------------
-                                     69 ; global & static initialisations
-                                     70 ;--------------------------------------------------------
-                                     71 	.area _HOME
-                                     72 	.area _GSINIT
-                                     73 	.area _GSFINAL
-                                     74 	.area _GSINIT
-                                     75 ;--------------------------------------------------------
-                                     76 ; Home
-                                     77 ;--------------------------------------------------------
-                                     78 	.area _HOME
-                                     79 	.area _HOME
+                                     39 ; ram data
+                                     40 ;--------------------------------------------------------
+                                     41 	.area _DATA
+    00000000                         42 _bullets::
+    00000000                         43 	.ds 60
+                                     44 ;--------------------------------------------------------
+                                     45 ; ram data
+                                     46 ;--------------------------------------------------------
+                                     47 	.area _INITIALIZED
+    00000000                         48 _hero::
+    00000000                         49 	.ds 64
+    00000040                         50 _hero2::
+    00000040                         51 	.ds 64
+    00000080                         52 _enemy::
+    00000080                         53 	.ds 64
+    000000C0                         54 _enemy2::
+    000000C0                         55 	.ds 64
+    00000100                         56 _bullet::
+    00000100                         57 	.ds 16
+    00000110                         58 _bullet2::
+    00000110                         59 	.ds 16
+    00000120                         60 _enemy_x::
+    00000120                         61 	.ds 1
+    00000121                         62 _enemy_y::
+    00000121                         63 	.ds 1
+    00000122                         64 _enemySpriteIndex::
+    00000122                         65 	.ds 1
+    00000123                         66 _enemySpeed::
+    00000123                         67 	.ds 1
+    00000124                         68 _enemyAnimationCounter::
+    00000124                         69 	.ds 1
+    00000125                         70 _hero_x::
+    00000125                         71 	.ds 1
+    00000126                         72 _hero_y::
+    00000126                         73 	.ds 1
+    00000127                         74 _heroSpriteIndex::
+    00000127                         75 	.ds 1
+                                     76 ;--------------------------------------------------------
+                                     77 ; absolute external ram data
+                                     78 ;--------------------------------------------------------
+                                     79 	.area _DABS (ABS)
                                      80 ;--------------------------------------------------------
-                                     81 ; code
+                                     81 ; global & static initialisations
                                      82 ;--------------------------------------------------------
-                                     83 	.area _CODE
-                                     84 ;main.c:20: void update_enemy_sprite() {
-                                     85 ;	---------------------------------
-                                     86 ; Function update_enemy_sprite
-                                     87 ; ---------------------------------
-    00000000                         88 _update_enemy_sprite::
-                                     89 ;main.c:22: int move_x = 0;
-                                     90 ;main.c:23: int move_y = 0;
-    00000000 01 00 00         [12]   91 	ld	bc, #0x0
-                                     92 ;main.c:26: if (enemy_x < hero_x) {
-    00000003 FAr00r01         [16]   93 	ld	a, (#_enemy_x)
-    00000006 21r05r01         [12]   94 	ld	hl, #_hero_x
-    00000009 96               [ 8]   95 	sub	a, (hl)
-    0000000A 30 04            [12]   96 	jr	NC, 00104$
-                                     97 ;main.c:27: move_x = 1;  // Aller vers la droite
-    0000000C 0E 01            [ 8]   98 	ld	c, #0x01
-    0000000E 18 0B            [12]   99 	jr	00105$
-    00000010                        100 00104$:
-                                    101 ;main.c:28: } else if (enemy_x > hero_x) {
-    00000010 FAr05r01         [16]  102 	ld	a, (#_hero_x)
-    00000013 21r00r01         [12]  103 	ld	hl, #_enemy_x
-    00000016 96               [ 8]  104 	sub	a, (hl)
-    00000017 30 02            [12]  105 	jr	NC, 00105$
-                                    106 ;main.c:29: move_x = -1; // Aller vers la gauche
-    00000019 0E FF            [ 8]  107 	ld	c, #0xff
-    0000001B                        108 00105$:
-                                    109 ;main.c:32: if (enemy_y < hero_y) {
-    0000001B FAr01r01         [16]  110 	ld	a, (#_enemy_y)
-    0000001E 21r06r01         [12]  111 	ld	hl, #_hero_y
-    00000021 96               [ 8]  112 	sub	a, (hl)
-    00000022 30 04            [12]  113 	jr	NC, 00109$
-                                    114 ;main.c:33: move_y = 1;  // Aller vers le bas
-    00000024 06 01            [ 8]  115 	ld	b, #0x01
-    00000026 18 0B            [12]  116 	jr	00110$
-    00000028                        117 00109$:
-                                    118 ;main.c:34: } else if (enemy_y > hero_y) {
-    00000028 FAr06r01         [16]  119 	ld	a, (#_hero_y)
-    0000002B 21r01r01         [12]  120 	ld	hl, #_enemy_y
-    0000002E 96               [ 8]  121 	sub	a, (hl)
-    0000002F 30 02            [12]  122 	jr	NC, 00110$
-                                    123 ;main.c:35: move_y = -1; // Aller vers le haut
-    00000031 06 FF            [ 8]  124 	ld	b, #0xff
-    00000033                        125 00110$:
-                                    126 ;main.c:39: enemy_x += move_x * 5 * enemySpeed;
-    00000033 79               [ 4]  127 	ld	a, c
-    00000034 87               [ 4]  128 	add	a, a
-    00000035 87               [ 4]  129 	add	a, a
-    00000036 81               [ 4]  130 	add	a, c
-    00000037 4F               [ 4]  131 	ld	c, a
-    00000038 C5               [16]  132 	push	bc
-    00000039 21r03r01         [12]  133 	ld	hl, #_enemySpeed
-    0000003C 5E               [ 8]  134 	ld	e, (hl)
-    0000003D 79               [ 4]  135 	ld	a, c
-    0000003E CDr00r00         [24]  136 	call	__muluschar
-    00000041 79               [ 4]  137 	ld	a, c
-    00000042 C1               [12]  138 	pop	bc
-    00000043 21r00r01         [12]  139 	ld	hl, #_enemy_x
-    00000046 4E               [ 8]  140 	ld	c, (hl)
-    00000047 81               [ 4]  141 	add	a, c
-    00000048 77               [ 8]  142 	ld	(hl), a
-                                    143 ;main.c:40: enemy_y += move_y * 5 * enemySpeed;
-    00000049 78               [ 4]  144 	ld	a, b
-    0000004A 4F               [ 4]  145 	ld	c, a
-    0000004B 87               [ 4]  146 	add	a, a
-    0000004C 87               [ 4]  147 	add	a, a
-    0000004D 81               [ 4]  148 	add	a, c
-    0000004E 4F               [ 4]  149 	ld	c, a
-    0000004F 21r03r01         [12]  150 	ld	hl, #_enemySpeed
-    00000052 5E               [ 8]  151 	ld	e, (hl)
-    00000053 79               [ 4]  152 	ld	a, c
-    00000054 CDr00r00         [24]  153 	call	__muluschar
-    00000057 21r01r01         [12]  154 	ld	hl, #_enemy_y
-    0000005A 7E               [ 8]  155 	ld	a, (hl)
-    0000005B 81               [ 4]  156 	add	a, c
-    0000005C 77               [ 8]  157 	ld	(hl), a
-                                    158 ;main.c:43: if (enemy_x > 150) enemy_x = 150;
-    0000005D 3E 96            [ 8]  159 	ld	a, #0x96
-    0000005F 21r00r01         [12]  160 	ld	hl, #_enemy_x
-    00000062 96               [ 8]  161 	sub	a, (hl)
-    00000063 30 02            [12]  162 	jr	NC, 00112$
-    00000065 36 96            [12]  163 	ld	(hl), #0x96
-    00000067                        164 00112$:
-                                    165 ;main.c:44: if (enemy_x < 10) enemy_x = 10;
-    00000067 21r00r01         [12]  166 	ld	hl, #_enemy_x
-    0000006A 7E               [ 8]  167 	ld	a, (hl)
-    0000006B D6 0A            [ 8]  168 	sub	a, #0x0a
-    0000006D 30 02            [12]  169 	jr	NC, 00114$
-    0000006F 36 0A            [12]  170 	ld	(hl), #0x0a
-    00000071                        171 00114$:
-                                    172 ;main.c:45: if (enemy_y > 140) enemy_y = 140;
-    00000071 3E 8C            [ 8]  173 	ld	a, #0x8c
-    00000073 21r01r01         [12]  174 	ld	hl, #_enemy_y
-    00000076 96               [ 8]  175 	sub	a, (hl)
-    00000077 30 02            [12]  176 	jr	NC, 00116$
-    00000079 36 8C            [12]  177 	ld	(hl), #0x8c
-    0000007B                        178 00116$:
-                                    179 ;main.c:46: if (enemy_y < 10) enemy_y = 10;
-    0000007B 21r01r01         [12]  180 	ld	hl, #_enemy_y
-    0000007E 7E               [ 8]  181 	ld	a, (hl)
-    0000007F D6 0A            [ 8]  182 	sub	a, #0x0a
-    00000081 30 02            [12]  183 	jr	NC, 00118$
-    00000083 36 0A            [12]  184 	ld	(hl), #0x0a
-    00000085                        185 00118$:
-                                    186 ;main.c:49: move_sprite(4, enemy_x, enemy_y); // Sprite 4 (en haut à gauche de l'ennemi)
-    00000085 21r01r01         [12]  187 	ld	hl, #_enemy_y
-    00000088 46               [ 8]  188 	ld	b, (hl)
-    00000089 21r00r01         [12]  189 	ld	hl, #_enemy_x
-    0000008C 4E               [ 8]  190 	ld	c, (hl)
-                                    191 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
-    0000008D 21r10r00         [12]  192 	ld	hl, #(_shadow_OAM + 16)
-                                    193 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
-    00000090 78               [ 4]  194 	ld	a, b
-    00000091 22               [ 8]  195 	ld	(hl+), a
-    00000092 71               [ 8]  196 	ld	(hl), c
-                                    197 ;main.c:50: move_sprite(5, enemy_x + 8, enemy_y); // Sprite 5 (en haut à droite)
-    00000093 21r01r01         [12]  198 	ld	hl, #_enemy_y
-    00000096 46               [ 8]  199 	ld	b, (hl)
-    00000097 FAr00r01         [16]  200 	ld	a, (#_enemy_x)
-    0000009A C6 08            [ 8]  201 	add	a, #0x08
-    0000009C 4F               [ 4]  202 	ld	c, a
-                                    203 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
-    0000009D 21r14r00         [12]  204 	ld	hl, #(_shadow_OAM + 20)
-                                    205 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
-    000000A0 78               [ 4]  206 	ld	a, b
-    000000A1 22               [ 8]  207 	ld	(hl+), a
-    000000A2 71               [ 8]  208 	ld	(hl), c
-                                    209 ;main.c:51: move_sprite(6, enemy_x, enemy_y + 8); // Sprite 6 (en bas à gauche)
-    000000A3 FAr01r01         [16]  210 	ld	a, (#_enemy_y)
-    000000A6 C6 08            [ 8]  211 	add	a, #0x08
-    000000A8 47               [ 4]  212 	ld	b, a
-    000000A9 21r00r01         [12]  213 	ld	hl, #_enemy_x
-    000000AC 4E               [ 8]  214 	ld	c, (hl)
-                                    215 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
-    000000AD 21r18r00         [12]  216 	ld	hl, #(_shadow_OAM + 24)
-                                    217 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
-    000000B0 78               [ 4]  218 	ld	a, b
-    000000B1 22               [ 8]  219 	ld	(hl+), a
-    000000B2 71               [ 8]  220 	ld	(hl), c
-                                    221 ;main.c:52: move_sprite(7, enemy_x + 8, enemy_y + 8); // Sprite 7 (en bas à droite)
-    000000B3 FAr01r01         [16]  222 	ld	a, (#_enemy_y)
-    000000B6 C6 08            [ 8]  223 	add	a, #0x08
-    000000B8 47               [ 4]  224 	ld	b, a
-    000000B9 FAr00r01         [16]  225 	ld	a, (#_enemy_x)
-    000000BC C6 08            [ 8]  226 	add	a, #0x08
-    000000BE 4F               [ 4]  227 	ld	c, a
-                                    228 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
-    000000BF 21r1Cr00         [12]  229 	ld	hl, #(_shadow_OAM + 28)
-                                    230 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
-    000000C2 78               [ 4]  231 	ld	a, b
-    000000C3 22               [ 8]  232 	ld	(hl+), a
-    000000C4 71               [ 8]  233 	ld	(hl), c
-                                    234 ;main.c:55: enemyAnimationCounter++;  // Incrémenter le compteur d'animation
-    000000C5 21r04r01         [12]  235 	ld	hl, #_enemyAnimationCounter
-    000000C8 34               [12]  236 	inc	(hl)
-                                    237 ;main.c:58: if (enemyAnimationCounter > 1) {
-    000000C9 3E 01            [ 8]  238 	ld	a, #0x01
-    000000CB 96               [ 8]  239 	sub	a, (hl)
-    000000CC D0               [20]  240 	ret	NC
-                                    241 ;main.c:59: if (enemySpriteIndex == 0) {
-    000000CD FAr02r01         [16]  242 	ld	a, (#_enemySpriteIndex)
-    000000D0 B7               [ 4]  243 	or	a, a
-    000000D1 20 1B            [12]  244 	jr	NZ, 00120$
-                                    245 ;c:\gbdk\include\gb\gb.h:1875: shadow_OAM[nb].tile=tile;
-    000000D3 21r12r00         [12]  246 	ld	hl, #(_shadow_OAM + 18)
-    000000D6 36 08            [12]  247 	ld	(hl), #0x08
-    000000D8 21r16r00         [12]  248 	ld	hl, #(_shadow_OAM + 22)
-    000000DB 36 09            [12]  249 	ld	(hl), #0x09
-    000000DD 21r1Ar00         [12]  250 	ld	hl, #(_shadow_OAM + 26)
-    000000E0 36 0A            [12]  251 	ld	(hl), #0x0a
-    000000E2 21r1Er00         [12]  252 	ld	hl, #(_shadow_OAM + 30)
-    000000E5 36 0B            [12]  253 	ld	(hl), #0x0b
-                                    254 ;main.c:64: enemySpriteIndex = 1;
-    000000E7 21r02r01         [12]  255 	ld	hl, #_enemySpriteIndex
-    000000EA 36 01            [12]  256 	ld	(hl), #0x01
-    000000EC 18 19            [12]  257 	jr	00121$
-    000000EE                        258 00120$:
-                                    259 ;c:\gbdk\include\gb\gb.h:1875: shadow_OAM[nb].tile=tile;
-    000000EE 21r12r00         [12]  260 	ld	hl, #(_shadow_OAM + 18)
-    000000F1 36 0C            [12]  261 	ld	(hl), #0x0c
-    000000F3 21r16r00         [12]  262 	ld	hl, #(_shadow_OAM + 22)
-    000000F6 36 0D            [12]  263 	ld	(hl), #0x0d
-    000000F8 21r1Ar00         [12]  264 	ld	hl, #(_shadow_OAM + 26)
-    000000FB 36 0E            [12]  265 	ld	(hl), #0x0e
-    000000FD 21r1Er00         [12]  266 	ld	hl, #(_shadow_OAM + 30)
-    00000100 36 0F            [12]  267 	ld	(hl), #0x0f
-                                    268 ;main.c:70: enemySpriteIndex = 0;
-    00000102 21r02r01         [12]  269 	ld	hl, #_enemySpriteIndex
-    00000105 36 00            [12]  270 	ld	(hl), #0x00
-    00000107                        271 00121$:
-                                    272 ;main.c:72: enemyAnimationCounter = 0; // Réinitialiser le compteur
-    00000107 21r04r01         [12]  273 	ld	hl, #_enemyAnimationCounter
-    0000010A 36 00            [12]  274 	ld	(hl), #0x00
-                                    275 ;main.c:74: }
-    0000010C C9               [16]  276 	ret
-                                    277 ;main.c:77: void update_hero_sprite() {
-                                    278 ;	---------------------------------
-                                    279 ; Function update_hero_sprite
-                                    280 ; ---------------------------------
-    0000010D                        281 _update_hero_sprite::
-                                    282 ;main.c:79: UINT8 move_x = 0;
-                                    283 ;main.c:80: UINT8 move_y = 0;
-    0000010D 01 00 00         [12]  284 	ld	bc, #0x0
-                                    285 ;main.c:83: if (joypad() & J_LEFT) {
-    00000110 CDr00r00         [24]  286 	call	_joypad
-    00000113 CB 4F            [ 8]  287 	bit	1, a
-    00000115 28 02            [12]  288 	jr	Z, 00102$
-                                    289 ;main.c:84: move_x = -8;
-    00000117 06 F8            [ 8]  290 	ld	b, #0xf8
-    00000119                        291 00102$:
-                                    292 ;main.c:86: if (joypad() & J_RIGHT) {
-    00000119 CDr00r00         [24]  293 	call	_joypad
-    0000011C 0F               [ 4]  294 	rrca
-    0000011D 30 02            [12]  295 	jr	NC, 00104$
-                                    296 ;main.c:87: move_x = 8;
-    0000011F 06 08            [ 8]  297 	ld	b, #0x08
-    00000121                        298 00104$:
-                                    299 ;main.c:89: if (joypad() & J_UP) {
-    00000121 CDr00r00         [24]  300 	call	_joypad
-    00000124 CB 57            [ 8]  301 	bit	2, a
-    00000126 28 02            [12]  302 	jr	Z, 00106$
-                                    303 ;main.c:90: move_y = -8;
-    00000128 0E F8            [ 8]  304 	ld	c, #0xf8
-    0000012A                        305 00106$:
-                                    306 ;main.c:92: if (joypad() & J_DOWN) {
-    0000012A CDr00r00         [24]  307 	call	_joypad
-    0000012D CB 5F            [ 8]  308 	bit	3, a
-    0000012F 28 02            [12]  309 	jr	Z, 00108$
-                                    310 ;main.c:93: move_y = 8;
-    00000131 0E 08            [ 8]  311 	ld	c, #0x08
-    00000133                        312 00108$:
-                                    313 ;main.c:97: hero_x += move_x;
-    00000133 21r05r01         [12]  314 	ld	hl, #_hero_x
-    00000136 7E               [ 8]  315 	ld	a, (hl)
-    00000137 80               [ 4]  316 	add	a, b
-    00000138 77               [ 8]  317 	ld	(hl), a
-                                    318 ;main.c:98: hero_y += move_y;
-    00000139 21r06r01         [12]  319 	ld	hl, #_hero_y
-    0000013C 7E               [ 8]  320 	ld	a, (hl)
-    0000013D 81               [ 4]  321 	add	a, c
-    0000013E 77               [ 8]  322 	ld	(hl), a
-                                    323 ;main.c:101: if (hero_x > 152) hero_x = 154; // Pour éviter de sortir à droite
-    0000013F 3E 98            [ 8]  324 	ld	a, #0x98
-    00000141 21r05r01         [12]  325 	ld	hl, #_hero_x
-    00000144 96               [ 8]  326 	sub	a, (hl)
-    00000145 30 02            [12]  327 	jr	NC, 00110$
-    00000147 36 9A            [12]  328 	ld	(hl), #0x9a
-    00000149                        329 00110$:
-                                    330 ;main.c:102: if (hero_x < 10) hero_x = 8;     // Pour éviter de sortir à gauche
-    00000149 21r05r01         [12]  331 	ld	hl, #_hero_x
-    0000014C 7E               [ 8]  332 	ld	a, (hl)
-    0000014D D6 0A            [ 8]  333 	sub	a, #0x0a
-    0000014F 30 02            [12]  334 	jr	NC, 00112$
-    00000151 36 08            [12]  335 	ld	(hl), #0x08
-    00000153                        336 00112$:
-                                    337 ;main.c:103: if (hero_y > 144) hero_y = 144; // Pour éviter de sortir en bas
-    00000153 3E 90            [ 8]  338 	ld	a, #0x90
-    00000155 21r06r01         [12]  339 	ld	hl, #_hero_y
-    00000158 96               [ 8]  340 	sub	a, (hl)
-    00000159 30 02            [12]  341 	jr	NC, 00114$
-    0000015B 36 90            [12]  342 	ld	(hl), #0x90
-    0000015D                        343 00114$:
-                                    344 ;main.c:104: if (hero_y < 16) hero_y = 16;     // Pour éviter de sortir en haut
-    0000015D 21r06r01         [12]  345 	ld	hl, #_hero_y
-    00000160 7E               [ 8]  346 	ld	a, (hl)
-    00000161 D6 10            [ 8]  347 	sub	a, #0x10
-    00000163 30 02            [12]  348 	jr	NC, 00116$
-    00000165 36 10            [12]  349 	ld	(hl), #0x10
-    00000167                        350 00116$:
-                                    351 ;main.c:107: move_sprite(0, hero_x, hero_y); // Sprite 0 (en haut à gauche)
-    00000167 21r06r01         [12]  352 	ld	hl, #_hero_y
-    0000016A 46               [ 8]  353 	ld	b, (hl)
-    0000016B 21r05r01         [12]  354 	ld	hl, #_hero_x
-    0000016E 4E               [ 8]  355 	ld	c, (hl)
-                                    356 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
-    0000016F 21r00r00         [12]  357 	ld	hl, #_shadow_OAM
-                                    358 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
-    00000172 78               [ 4]  359 	ld	a, b
-    00000173 22               [ 8]  360 	ld	(hl+), a
-    00000174 71               [ 8]  361 	ld	(hl), c
-                                    362 ;main.c:108: move_sprite(1, hero_x + 8, hero_y); // Sprite 1 (en haut à droite)
-    00000175 21r06r01         [12]  363 	ld	hl, #_hero_y
-    00000178 46               [ 8]  364 	ld	b, (hl)
-    00000179 FAr05r01         [16]  365 	ld	a, (#_hero_x)
-    0000017C C6 08            [ 8]  366 	add	a, #0x08
-    0000017E 4F               [ 4]  367 	ld	c, a
-                                    368 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
-    0000017F 21r04r00         [12]  369 	ld	hl, #(_shadow_OAM + 4)
-                                    370 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
-    00000182 78               [ 4]  371 	ld	a, b
-    00000183 22               [ 8]  372 	ld	(hl+), a
-    00000184 71               [ 8]  373 	ld	(hl), c
-                                    374 ;main.c:109: move_sprite(2, hero_x, hero_y + 8); // Sprite 2 (en bas à gauche)
-    00000185 FAr06r01         [16]  375 	ld	a, (#_hero_y)
-    00000188 C6 08            [ 8]  376 	add	a, #0x08
-    0000018A 47               [ 4]  377 	ld	b, a
-    0000018B 21r05r01         [12]  378 	ld	hl, #_hero_x
-    0000018E 4E               [ 8]  379 	ld	c, (hl)
-                                    380 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
-    0000018F 21r08r00         [12]  381 	ld	hl, #(_shadow_OAM + 8)
-                                    382 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
-    00000192 78               [ 4]  383 	ld	a, b
-    00000193 22               [ 8]  384 	ld	(hl+), a
-    00000194 71               [ 8]  385 	ld	(hl), c
-                                    386 ;main.c:110: move_sprite(3, hero_x + 8, hero_y + 8); // Sprite 3 (en bas à droite)
-    00000195 FAr06r01         [16]  387 	ld	a, (#_hero_y)
-    00000198 C6 08            [ 8]  388 	add	a, #0x08
-    0000019A 47               [ 4]  389 	ld	b, a
-    0000019B FAr05r01         [16]  390 	ld	a, (#_hero_x)
-    0000019E C6 08            [ 8]  391 	add	a, #0x08
-    000001A0 4F               [ 4]  392 	ld	c, a
-                                    393 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
-    000001A1 21r0Cr00         [12]  394 	ld	hl, #(_shadow_OAM + 12)
-                                    395 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
-    000001A4 78               [ 4]  396 	ld	a, b
-    000001A5 22               [ 8]  397 	ld	(hl+), a
-    000001A6 71               [ 8]  398 	ld	(hl), c
-                                    399 ;main.c:113: if (heroSpriteIndex == 0) {
-    000001A7 FAr07r01         [16]  400 	ld	a, (#_heroSpriteIndex)
-    000001AA B7               [ 4]  401 	or	a, a
-    000001AB 20 1A            [12]  402 	jr	NZ, 00118$
-                                    403 ;c:\gbdk\include\gb\gb.h:1875: shadow_OAM[nb].tile=tile;
-    000001AD 21r02r00         [12]  404 	ld	hl, #(_shadow_OAM + 2)
-    000001B0 36 00            [12]  405 	ld	(hl), #0x00
-    000001B2 21r06r00         [12]  406 	ld	hl, #(_shadow_OAM + 6)
-    000001B5 36 01            [12]  407 	ld	(hl), #0x01
-    000001B7 21r0Ar00         [12]  408 	ld	hl, #(_shadow_OAM + 10)
-    000001BA 36 02            [12]  409 	ld	(hl), #0x02
-    000001BC 21r0Er00         [12]  410 	ld	hl, #(_shadow_OAM + 14)
-    000001BF 36 03            [12]  411 	ld	(hl), #0x03
-                                    412 ;main.c:118: heroSpriteIndex = 1;
-    000001C1 21r07r01         [12]  413 	ld	hl, #_heroSpriteIndex
-    000001C4 36 01            [12]  414 	ld	(hl), #0x01
-    000001C6 C9               [16]  415 	ret
-    000001C7                        416 00118$:
-                                    417 ;c:\gbdk\include\gb\gb.h:1875: shadow_OAM[nb].tile=tile;
-    000001C7 21r02r00         [12]  418 	ld	hl, #(_shadow_OAM + 2)
-    000001CA 36 04            [12]  419 	ld	(hl), #0x04
-    000001CC 21r06r00         [12]  420 	ld	hl, #(_shadow_OAM + 6)
-    000001CF 36 05            [12]  421 	ld	(hl), #0x05
-    000001D1 21r0Ar00         [12]  422 	ld	hl, #(_shadow_OAM + 10)
-    000001D4 36 06            [12]  423 	ld	(hl), #0x06
-    000001D6 21r0Er00         [12]  424 	ld	hl, #(_shadow_OAM + 14)
-    000001D9 36 07            [12]  425 	ld	(hl), #0x07
-                                    426 ;main.c:124: heroSpriteIndex = 0;
-    000001DB 21r07r01         [12]  427 	ld	hl, #_heroSpriteIndex
-    000001DE 36 00            [12]  428 	ld	(hl), #0x00
-                                    429 ;main.c:126: }
-    000001E0 C9               [16]  430 	ret
-                                    431 ;main.c:128: void main(void) {
-                                    432 ;	---------------------------------
-                                    433 ; Function main
-                                    434 ; ---------------------------------
-    000001E1                        435 _main::
-                                    436 ;main.c:130: set_sprite_data(0, 8, hero);  // 8 tuiles pour le premier personnage
-    000001E1 11r00r00         [12]  437 	ld	de, #_hero
-    000001E4 D5               [16]  438 	push	de
-    000001E5 21 00 08         [12]  439 	ld	hl, #0x800
-    000001E8 E5               [16]  440 	push	hl
-    000001E9 CDr00r00         [24]  441 	call	_set_sprite_data
-    000001EC E8 04            [16]  442 	add	sp, #4
-                                    443 ;main.c:131: set_sprite_data(8, 8, enemy);  // 8 tuiles pour le second personnage
-    000001EE 11r80r00         [12]  444 	ld	de, #_enemy
-    000001F1 D5               [16]  445 	push	de
-    000001F2 3E 08            [ 8]  446 	ld	a, #0x08
-    000001F4 F5               [16]  447 	push	af
-    000001F5 33               [ 8]  448 	inc	sp
-    000001F6 3E 08            [ 8]  449 	ld	a, #0x08
-    000001F8 F5               [16]  450 	push	af
-    000001F9 33               [ 8]  451 	inc	sp
-    000001FA CDr00r00         [24]  452 	call	_set_sprite_data
-    000001FD E8 04            [16]  453 	add	sp, #4
-                                    454 ;c:\gbdk\include\gb\gb.h:1875: shadow_OAM[nb].tile=tile;
-    000001FF 21r12r00         [12]  455 	ld	hl, #(_shadow_OAM + 18)
-    00000202 36 08            [12]  456 	ld	(hl), #0x08
-    00000204 21r16r00         [12]  457 	ld	hl, #(_shadow_OAM + 22)
-    00000207 36 09            [12]  458 	ld	(hl), #0x09
-    00000209 21r1Ar00         [12]  459 	ld	hl, #(_shadow_OAM + 26)
-    0000020C 36 0A            [12]  460 	ld	(hl), #0x0a
-    0000020E 21r1Er00         [12]  461 	ld	hl, #(_shadow_OAM + 30)
-    00000211 36 0B            [12]  462 	ld	(hl), #0x0b
-                                    463 ;main.c:140: move_sprite(4, enemy_x, enemy_y); // Sprite 4 (en haut à gauche de l'ennemi)
-    00000213 21r01r01         [12]  464 	ld	hl, #_enemy_y
-    00000216 46               [ 8]  465 	ld	b, (hl)
-    00000217 21r00r01         [12]  466 	ld	hl, #_enemy_x
-    0000021A 4E               [ 8]  467 	ld	c, (hl)
-                                    468 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
-    0000021B 21r10r00         [12]  469 	ld	hl, #(_shadow_OAM + 16)
-                                    470 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
-    0000021E 78               [ 4]  471 	ld	a, b
-    0000021F 22               [ 8]  472 	ld	(hl+), a
-    00000220 71               [ 8]  473 	ld	(hl), c
-                                    474 ;main.c:141: move_sprite(5, enemy_x + 8, enemy_y); // Sprite 5 (en haut à droite)
-    00000221 21r01r01         [12]  475 	ld	hl, #_enemy_y
-    00000224 46               [ 8]  476 	ld	b, (hl)
-    00000225 FAr00r01         [16]  477 	ld	a, (#_enemy_x)
-    00000228 C6 08            [ 8]  478 	add	a, #0x08
-    0000022A 4F               [ 4]  479 	ld	c, a
-                                    480 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
-    0000022B 21r14r00         [12]  481 	ld	hl, #(_shadow_OAM + 20)
-                                    482 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
-    0000022E 78               [ 4]  483 	ld	a, b
-    0000022F 22               [ 8]  484 	ld	(hl+), a
-    00000230 71               [ 8]  485 	ld	(hl), c
-                                    486 ;main.c:142: move_sprite(6, enemy_x, enemy_y + 8); // Sprite 6 (en bas à gauche)
-    00000231 FAr01r01         [16]  487 	ld	a, (#_enemy_y)
-    00000234 C6 08            [ 8]  488 	add	a, #0x08
-    00000236 47               [ 4]  489 	ld	b, a
-    00000237 21r00r01         [12]  490 	ld	hl, #_enemy_x
-    0000023A 4E               [ 8]  491 	ld	c, (hl)
-                                    492 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
-    0000023B 21r18r00         [12]  493 	ld	hl, #(_shadow_OAM + 24)
-                                    494 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
-    0000023E 78               [ 4]  495 	ld	a, b
-    0000023F 22               [ 8]  496 	ld	(hl+), a
-    00000240 71               [ 8]  497 	ld	(hl), c
-                                    498 ;main.c:143: move_sprite(7, enemy_x + 8, enemy_y + 8); // Sprite 7 (en bas à droite)
-    00000241 FAr01r01         [16]  499 	ld	a, (#_enemy_y)
-    00000244 C6 08            [ 8]  500 	add	a, #0x08
-    00000246 47               [ 4]  501 	ld	b, a
-    00000247 FAr00r01         [16]  502 	ld	a, (#_enemy_x)
-    0000024A C6 08            [ 8]  503 	add	a, #0x08
-    0000024C 4F               [ 4]  504 	ld	c, a
-                                    505 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
-    0000024D 21r1Cr00         [12]  506 	ld	hl, #(_shadow_OAM + 28)
-                                    507 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
-    00000250 78               [ 4]  508 	ld	a, b
-    00000251 22               [ 8]  509 	ld	(hl+), a
-    00000252 71               [ 8]  510 	ld	(hl), c
-                                    511 ;main.c:146: move_sprite(0, hero_x, hero_y); // Sprite 0 (en haut à gauche)
-    00000253 21r06r01         [12]  512 	ld	hl, #_hero_y
-    00000256 46               [ 8]  513 	ld	b, (hl)
-    00000257 21r05r01         [12]  514 	ld	hl, #_hero_x
-    0000025A 4E               [ 8]  515 	ld	c, (hl)
-                                    516 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
-    0000025B 21r00r00         [12]  517 	ld	hl, #_shadow_OAM
-                                    518 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
-    0000025E 78               [ 4]  519 	ld	a, b
-    0000025F 22               [ 8]  520 	ld	(hl+), a
-    00000260 71               [ 8]  521 	ld	(hl), c
-                                    522 ;main.c:147: move_sprite(1, hero_x + 8, hero_y); // Sprite 1 (en haut à droite)
-    00000261 21r06r01         [12]  523 	ld	hl, #_hero_y
-    00000264 46               [ 8]  524 	ld	b, (hl)
-    00000265 FAr05r01         [16]  525 	ld	a, (#_hero_x)
-    00000268 C6 08            [ 8]  526 	add	a, #0x08
-    0000026A 4F               [ 4]  527 	ld	c, a
-                                    528 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
-    0000026B 21r04r00         [12]  529 	ld	hl, #(_shadow_OAM + 4)
-                                    530 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
-    0000026E 78               [ 4]  531 	ld	a, b
-    0000026F 22               [ 8]  532 	ld	(hl+), a
-    00000270 71               [ 8]  533 	ld	(hl), c
-                                    534 ;main.c:148: move_sprite(2, hero_x, hero_y + 8); // Sprite 2 (en bas à gauche)
-    00000271 FAr06r01         [16]  535 	ld	a, (#_hero_y)
-    00000274 C6 08            [ 8]  536 	add	a, #0x08
-    00000276 47               [ 4]  537 	ld	b, a
-    00000277 21r05r01         [12]  538 	ld	hl, #_hero_x
-    0000027A 4E               [ 8]  539 	ld	c, (hl)
-                                    540 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
-    0000027B 21r08r00         [12]  541 	ld	hl, #(_shadow_OAM + 8)
-                                    542 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
-    0000027E 78               [ 4]  543 	ld	a, b
-    0000027F 22               [ 8]  544 	ld	(hl+), a
-    00000280 71               [ 8]  545 	ld	(hl), c
-                                    546 ;main.c:149: move_sprite(3, hero_x + 8, hero_y + 8); // Sprite 3 (en bas à droite)
-    00000281 FAr06r01         [16]  547 	ld	a, (#_hero_y)
-    00000284 C6 08            [ 8]  548 	add	a, #0x08
-    00000286 47               [ 4]  549 	ld	b, a
-    00000287 FAr05r01         [16]  550 	ld	a, (#_hero_x)
-    0000028A C6 08            [ 8]  551 	add	a, #0x08
-    0000028C 4F               [ 4]  552 	ld	c, a
-                                    553 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
-    0000028D 21r0Cr00         [12]  554 	ld	hl, #(_shadow_OAM + 12)
-                                    555 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
-    00000290 78               [ 4]  556 	ld	a, b
-    00000291 22               [ 8]  557 	ld	(hl+), a
-    00000292 71               [ 8]  558 	ld	(hl), c
-                                    559 ;main.c:151: SHOW_SPRITES;
-    00000293 F0r00            [12]  560 	ldh	a, (_LCDC_REG + 0)
-    00000295 F6 02            [ 8]  561 	or	a, #0x02
-    00000297 E0r00            [12]  562 	ldh	(_LCDC_REG + 0), a
-                                    563 ;main.c:154: while(1) {
-    00000299                        564 00102$:
-                                    565 ;main.c:156: update_enemy_sprite(); // Déplace et anime l'ennemi
-    00000299 CDr00r00         [24]  566 	call	_update_enemy_sprite
-                                    567 ;main.c:159: update_hero_sprite(); // Déplace et anime le héros
-    0000029C CDr0Dr01         [24]  568 	call	_update_hero_sprite
-                                    569 ;main.c:161: delay(100); // Délai pour l'animation globale
-    0000029F 11 64 00         [12]  570 	ld	de, #0x0064
-    000002A2 CDr00r00         [24]  571 	call	_delay
-                                    572 ;main.c:163: }
-    000002A5 18 F2            [12]  573 	jr	00102$
-                                    574 	.area _CODE
-                                    575 	.area _INITIALIZER
-    00000000                        576 __xinit__hero:
-    00000000 08                     577 	.db #0x08	; 8
-    00000001 08                     578 	.db #0x08	; 8
-    00000002 0C                     579 	.db #0x0c	; 12
-    00000003 0C                     580 	.db #0x0c	; 12
-    00000004 0B                     581 	.db #0x0b	; 11
-    00000005 0F                     582 	.db #0x0f	; 15
-    00000006 08                     583 	.db #0x08	; 8
-    00000007 0F                     584 	.db #0x0f	; 15
-    00000008 16                     585 	.db #0x16	; 22
-    00000009 1F                     586 	.db #0x1f	; 31
-    0000000A 14                     587 	.db #0x14	; 20
-    0000000B 1F                     588 	.db #0x1f	; 31
-    0000000C 16                     589 	.db #0x16	; 22
-    0000000D 1F                     590 	.db #0x1f	; 31
-    0000000E 10                     591 	.db #0x10	; 16
-    0000000F 10                     592 	.db #0x10	; 16
-    00000010 08                     593 	.db #0x08	; 8
-    00000011 08                     594 	.db #0x08	; 8
-    00000012 18                     595 	.db #0x18	; 24
-    00000013 18                     596 	.db #0x18	; 24
-    00000014 E8                     597 	.db #0xe8	; 232
-    00000015 F8                     598 	.db #0xf8	; 248
-    00000016 08                     599 	.db #0x08	; 8
-    00000017 F8                     600 	.db #0xf8	; 248
-    00000018 34                     601 	.db #0x34	; 52	'4'
-    00000019 FC                     602 	.db #0xfc	; 252
-    0000001A 24                     603 	.db #0x24	; 36
-    0000001B FC                     604 	.db #0xfc	; 252
-    0000001C B4                     605 	.db #0xb4	; 180
-    0000001D FC                     606 	.db #0xfc	; 252
-    0000001E 04                     607 	.db #0x04	; 4
-    0000001F 04                     608 	.db #0x04	; 4
-    00000020 1E                     609 	.db #0x1e	; 30
-    00000021 1E                     610 	.db #0x1e	; 30
-    00000022 D7                     611 	.db #0xd7	; 215
-    00000023 D7                     612 	.db #0xd7	; 215
-    00000024 AE                     613 	.db #0xae	; 174
-    00000025 BE                     614 	.db #0xbe	; 190
-    00000026 92                     615 	.db #0x92	; 146
-    00000027 BE                     616 	.db #0xbe	; 190
-    00000028 92                     617 	.db #0x92	; 146
-    00000029 BE                     618 	.db #0xbe	; 190
-    0000002A 4F                     619 	.db #0x4f	; 79	'O'
-    0000002B 7F                     620 	.db #0x7f	; 127
-    0000002C 29                     621 	.db #0x29	; 41
-    0000002D 3F                     622 	.db #0x3f	; 63
-    0000002E 1F                     623 	.db #0x1f	; 31
-    0000002F 1F                     624 	.db #0x1f	; 31
-    00000030 BC                     625 	.db #0xbc	; 188
-    00000031 BC                     626 	.db #0xbc	; 188
-    00000032 70                     627 	.db #0x70	; 112	'p'
-    00000033 70                     628 	.db #0x70	; 112	'p'
-    00000034 38                     629 	.db #0x38	; 56	'8'
-    00000035 38                     630 	.db #0x38	; 56	'8'
-    00000036 24                     631 	.db #0x24	; 36
-    00000037 3C                     632 	.db #0x3c	; 60
-    00000038 24                     633 	.db #0x24	; 36
-    00000039 3C                     634 	.db #0x3c	; 60
-    0000003A 78                     635 	.db #0x78	; 120	'x'
-    0000003B 78                     636 	.db #0x78	; 120	'x'
-    0000003C C8                     637 	.db #0xc8	; 200
-    0000003D F8                     638 	.db #0xf8	; 248
-    0000003E F8                     639 	.db #0xf8	; 248
-    0000003F F8                     640 	.db #0xf8	; 248
-    00000040                        641 __xinit__hero2:
-    00000040 08                     642 	.db #0x08	; 8
-    00000041 08                     643 	.db #0x08	; 8
-    00000042 0C                     644 	.db #0x0c	; 12
-    00000043 0C                     645 	.db #0x0c	; 12
-    00000044 0B                     646 	.db #0x0b	; 11
-    00000045 0F                     647 	.db #0x0f	; 15
-    00000046 08                     648 	.db #0x08	; 8
-    00000047 0F                     649 	.db #0x0f	; 15
-    00000048 16                     650 	.db #0x16	; 22
-    00000049 1F                     651 	.db #0x1f	; 31
-    0000004A 14                     652 	.db #0x14	; 20
-    0000004B 1F                     653 	.db #0x1f	; 31
-    0000004C 16                     654 	.db #0x16	; 22
-    0000004D 1F                     655 	.db #0x1f	; 31
-    0000004E 10                     656 	.db #0x10	; 16
-    0000004F 10                     657 	.db #0x10	; 16
-    00000050 08                     658 	.db #0x08	; 8
-    00000051 08                     659 	.db #0x08	; 8
-    00000052 18                     660 	.db #0x18	; 24
-    00000053 18                     661 	.db #0x18	; 24
-    00000054 E8                     662 	.db #0xe8	; 232
-    00000055 F8                     663 	.db #0xf8	; 248
-    00000056 08                     664 	.db #0x08	; 8
-    00000057 F8                     665 	.db #0xf8	; 248
-    00000058 34                     666 	.db #0x34	; 52	'4'
-    00000059 FC                     667 	.db #0xfc	; 252
-    0000005A 24                     668 	.db #0x24	; 36
-    0000005B FC                     669 	.db #0xfc	; 252
-    0000005C B4                     670 	.db #0xb4	; 180
-    0000005D FC                     671 	.db #0xfc	; 252
-    0000005E 04                     672 	.db #0x04	; 4
-    0000005F 04                     673 	.db #0x04	; 4
-    00000060 1E                     674 	.db #0x1e	; 30
-    00000061 1E                     675 	.db #0x1e	; 30
-    00000062 2F                     676 	.db #0x2f	; 47
-    00000063 2F                     677 	.db #0x2f	; 47
-    00000064 4E                     678 	.db #0x4e	; 78	'N'
-    00000065 4E                     679 	.db #0x4e	; 78	'N'
-    00000066 52                     680 	.db #0x52	; 82	'R'
-    00000067 7E                     681 	.db #0x7e	; 126
-    00000068 52                     682 	.db #0x52	; 82	'R'
-    00000069 7E                     683 	.db #0x7e	; 126
-    0000006A 4F                     684 	.db #0x4f	; 79	'O'
-    0000006B 7F                     685 	.db #0x7f	; 127
-    0000006C 29                     686 	.db #0x29	; 41
-    0000006D 3F                     687 	.db #0x3f	; 63
-    0000006E 1F                     688 	.db #0x1f	; 31
-    0000006F 1F                     689 	.db #0x1f	; 31
-    00000070 BC                     690 	.db #0xbc	; 188
-    00000071 BC                     691 	.db #0xbc	; 188
-    00000072 70                     692 	.db #0x70	; 112	'p'
-    00000073 70                     693 	.db #0x70	; 112	'p'
-    00000074 38                     694 	.db #0x38	; 56	'8'
-    00000075 38                     695 	.db #0x38	; 56	'8'
-    00000076 24                     696 	.db #0x24	; 36
-    00000077 3C                     697 	.db #0x3c	; 60
-    00000078 24                     698 	.db #0x24	; 36
-    00000079 3C                     699 	.db #0x3c	; 60
-    0000007A 78                     700 	.db #0x78	; 120	'x'
-    0000007B 78                     701 	.db #0x78	; 120	'x'
-    0000007C C8                     702 	.db #0xc8	; 200
-    0000007D F8                     703 	.db #0xf8	; 248
-    0000007E F8                     704 	.db #0xf8	; 248
-    0000007F F8                     705 	.db #0xf8	; 248
-    00000080                        706 __xinit__enemy:
-    00000080 1E                     707 	.db #0x1e	; 30
-    00000081 1E                     708 	.db #0x1e	; 30
-    00000082 7F                     709 	.db #0x7f	; 127
-    00000083 7F                     710 	.db #0x7f	; 127
-    00000084 FF                     711 	.db #0xff	; 255
-    00000085 FF                     712 	.db #0xff	; 255
-    00000086 CF                     713 	.db #0xcf	; 207
-    00000087 FF                     714 	.db #0xff	; 255
-    00000088 CC                     715 	.db #0xcc	; 204
-    00000089 FF                     716 	.db #0xff	; 255
-    0000008A FF                     717 	.db #0xff	; 255
-    0000008B FF                     718 	.db #0xff	; 255
-    0000008C F3                     719 	.db #0xf3	; 243
-    0000008D FF                     720 	.db #0xff	; 255
-    0000008E F3                     721 	.db #0xf3	; 243
-    0000008F FF                     722 	.db #0xff	; 255
-    00000090 00                     723 	.db #0x00	; 0
-    00000091 00                     724 	.db #0x00	; 0
-    00000092 80                     725 	.db #0x80	; 128
-    00000093 80                     726 	.db #0x80	; 128
-    00000094 C0                     727 	.db #0xc0	; 192
-    00000095 C0                     728 	.db #0xc0	; 192
-    00000096 C0                     729 	.db #0xc0	; 192
-    00000097 C0                     730 	.db #0xc0	; 192
-    00000098 C0                     731 	.db #0xc0	; 192
-    00000099 C0                     732 	.db #0xc0	; 192
-    0000009A C0                     733 	.db #0xc0	; 192
-    0000009B C0                     734 	.db #0xc0	; 192
-    0000009C C0                     735 	.db #0xc0	; 192
-    0000009D C0                     736 	.db #0xc0	; 192
-    0000009E C0                     737 	.db #0xc0	; 192
-    0000009F C0                     738 	.db #0xc0	; 192
-    000000A0 7F                     739 	.db #0x7f	; 127
-    000000A1 7F                     740 	.db #0x7f	; 127
-    000000A2 7F                     741 	.db #0x7f	; 127
-    000000A3 7F                     742 	.db #0x7f	; 127
-    000000A4 9F                     743 	.db #0x9f	; 159
-    000000A5 9F                     744 	.db #0x9f	; 159
-    000000A6 9E                     745 	.db #0x9e	; 158
-    000000A7 9E                     746 	.db #0x9e	; 158
-    000000A8 7E                     747 	.db #0x7e	; 126
-    000000A9 7E                     748 	.db #0x7e	; 126
-    000000AA 1F                     749 	.db #0x1f	; 31
-    000000AB 1F                     750 	.db #0x1f	; 31
-    000000AC 12                     751 	.db #0x12	; 18
-    000000AD 12                     752 	.db #0x12	; 18
-    000000AE 12                     753 	.db #0x12	; 18
-    000000AF 12                     754 	.db #0x12	; 18
-    000000B0 80                     755 	.db #0x80	; 128
-    000000B1 80                     756 	.db #0x80	; 128
-    000000B2 00                     757 	.db #0x00	; 0
-    000000B3 00                     758 	.db #0x00	; 0
-    000000B4 C0                     759 	.db #0xc0	; 192
-    000000B5 C0                     760 	.db #0xc0	; 192
-    000000B6 40                     761 	.db #0x40	; 64
-    000000B7 40                     762 	.db #0x40	; 64
-    000000B8 40                     763 	.db #0x40	; 64
-    000000B9 40                     764 	.db #0x40	; 64
-    000000BA 80                     765 	.db #0x80	; 128
-    000000BB 80                     766 	.db #0x80	; 128
-    000000BC 00                     767 	.db #0x00	; 0
-    000000BD 00                     768 	.db #0x00	; 0
-    000000BE 00                     769 	.db #0x00	; 0
-    000000BF 00                     770 	.db #0x00	; 0
-    000000C0                        771 __xinit__enemy2:
-    000000C0 1E                     772 	.db #0x1e	; 30
-    000000C1 1E                     773 	.db #0x1e	; 30
-    000000C2 7F                     774 	.db #0x7f	; 127
-    000000C3 7F                     775 	.db #0x7f	; 127
-    000000C4 C9                     776 	.db #0xc9	; 201
-    000000C5 C9                     777 	.db #0xc9	; 201
-    000000C6 88                     778 	.db #0x88	; 136
-    000000C7 88                     779 	.db #0x88	; 136
-    000000C8 C8                     780 	.db #0xc8	; 200
-    000000C9 C8                     781 	.db #0xc8	; 200
-    000000CA FF                     782 	.db #0xff	; 255
-    000000CB FF                     783 	.db #0xff	; 255
-    000000CC C0                     784 	.db #0xc0	; 192
-    000000CD C0                     785 	.db #0xc0	; 192
-    000000CE E1                     786 	.db #0xe1	; 225
-    000000CF E1                     787 	.db #0xe1	; 225
-    000000D0 00                     788 	.db #0x00	; 0
-    000000D1 00                     789 	.db #0x00	; 0
-    000000D2 80                     790 	.db #0x80	; 128
-    000000D3 80                     791 	.db #0x80	; 128
-    000000D4 C0                     792 	.db #0xc0	; 192
-    000000D5 C0                     793 	.db #0xc0	; 192
-    000000D6 C0                     794 	.db #0xc0	; 192
-    000000D7 C0                     795 	.db #0xc0	; 192
-    000000D8 C0                     796 	.db #0xc0	; 192
-    000000D9 C0                     797 	.db #0xc0	; 192
-    000000DA C0                     798 	.db #0xc0	; 192
-    000000DB C0                     799 	.db #0xc0	; 192
-    000000DC C0                     800 	.db #0xc0	; 192
-    000000DD C0                     801 	.db #0xc0	; 192
-    000000DE C0                     802 	.db #0xc0	; 192
-    000000DF C0                     803 	.db #0xc0	; 192
-    000000E0 7F                     804 	.db #0x7f	; 127
-    000000E1 7F                     805 	.db #0x7f	; 127
-    000000E2 7F                     806 	.db #0x7f	; 127
-    000000E3 7F                     807 	.db #0x7f	; 127
-    000000E4 9F                     808 	.db #0x9f	; 159
-    000000E5 9F                     809 	.db #0x9f	; 159
-    000000E6 9E                     810 	.db #0x9e	; 158
-    000000E7 9E                     811 	.db #0x9e	; 158
-    000000E8 7E                     812 	.db #0x7e	; 126
-    000000E9 7E                     813 	.db #0x7e	; 126
-    000000EA 1F                     814 	.db #0x1f	; 31
-    000000EB 1F                     815 	.db #0x1f	; 31
-    000000EC 12                     816 	.db #0x12	; 18
-    000000ED 12                     817 	.db #0x12	; 18
-    000000EE 12                     818 	.db #0x12	; 18
-    000000EF 12                     819 	.db #0x12	; 18
-    000000F0 80                     820 	.db #0x80	; 128
-    000000F1 80                     821 	.db #0x80	; 128
-    000000F2 00                     822 	.db #0x00	; 0
-    000000F3 00                     823 	.db #0x00	; 0
-    000000F4 C0                     824 	.db #0xc0	; 192
-    000000F5 C0                     825 	.db #0xc0	; 192
-    000000F6 40                     826 	.db #0x40	; 64
-    000000F7 40                     827 	.db #0x40	; 64
-    000000F8 40                     828 	.db #0x40	; 64
-    000000F9 40                     829 	.db #0x40	; 64
-    000000FA 80                     830 	.db #0x80	; 128
-    000000FB 80                     831 	.db #0x80	; 128
-    000000FC 00                     832 	.db #0x00	; 0
-    000000FD 00                     833 	.db #0x00	; 0
-    000000FE 00                     834 	.db #0x00	; 0
-    000000FF 00                     835 	.db #0x00	; 0
-    00000100                        836 __xinit__enemy_x:
-    00000100 78                     837 	.db #0x78	; 120	'x'
-    00000101                        838 __xinit__enemy_y:
-    00000101 4E                     839 	.db #0x4e	; 78	'N'
-    00000102                        840 __xinit__enemySpriteIndex:
-    00000102 00                     841 	.db #0x00	; 0
-    00000103                        842 __xinit__enemySpeed:
-    00000103 01                     843 	.db #0x01	; 1
-    00000104                        844 __xinit__enemyAnimationCounter:
-    00000104 00                     845 	.db #0x00	; 0
-    00000105                        846 __xinit__hero_x:
-    00000105 58                     847 	.db #0x58	; 88	'X'
-    00000106                        848 __xinit__hero_y:
-    00000106 4E                     849 	.db #0x4e	; 78	'N'
-    00000107                        850 __xinit__heroSpriteIndex:
-    00000107 00                     851 	.db #0x00	; 0
-                                    852 	.area _CABS (ABS)
+                                     83 	.area _HOME
+                                     84 	.area _GSINIT
+                                     85 	.area _GSFINAL
+                                     86 	.area _GSINIT
+                                     87 ;--------------------------------------------------------
+                                     88 ; Home
+                                     89 ;--------------------------------------------------------
+                                     90 	.area _HOME
+                                     91 	.area _HOME
+                                     92 ;--------------------------------------------------------
+                                     93 ; code
+                                     94 ;--------------------------------------------------------
+                                     95 	.area _CODE
+                                     96 ;main.c:36: void initialize_bullets() {
+                                     97 ;	---------------------------------
+                                     98 ; Function initialize_bullets
+                                     99 ; ---------------------------------
+    00000000                        100 _initialize_bullets::
+                                    101 ;main.c:37: for (UINT8 i = 0; i < MAX_BULLETS; i++) {
+    00000000 0E 00            [ 8]  102 	ld	c, #0x00
+    00000002                        103 00103$:
+    00000002 79               [ 4]  104 	ld	a, c
+    00000003 D6 0A            [ 8]  105 	sub	a, #0x0a
+    00000005 D0               [20]  106 	ret	NC
+                                    107 ;main.c:38: bullets[i].x = 0;
+    00000006 06 00            [ 8]  108 	ld	b, #0x00
+    00000008 69               [ 4]  109 	ld	l, c
+    00000009 60               [ 4]  110 	ld	h, b
+    0000000A 29               [ 8]  111 	add	hl, hl
+    0000000B 09               [ 8]  112 	add	hl, bc
+    0000000C 29               [ 8]  113 	add	hl, hl
+    0000000D 7D               [ 4]  114 	ld	a, l
+    0000000E C6r00            [ 8]  115 	add	a, #<(_bullets)
+    00000010 5F               [ 4]  116 	ld	e, a
+    00000011 7C               [ 4]  117 	ld	a, h
+    00000012 CEs00            [ 8]  118 	adc	a, #>(_bullets)
+    00000014 57               [ 4]  119 	ld	d, a
+    00000015 AF               [ 4]  120 	xor	a, a
+    00000016 12               [ 8]  121 	ld	(de), a
+                                    122 ;main.c:39: bullets[i].y = 0;
+    00000017 6B               [ 4]  123 	ld	l, e
+                                    124 ;	spillPairReg hl
+                                    125 ;	spillPairReg hl
+    00000018 62               [ 4]  126 	ld	h, d
+                                    127 ;	spillPairReg hl
+                                    128 ;	spillPairReg hl
+    00000019 23               [ 8]  129 	inc	hl
+    0000001A 36 00            [12]  130 	ld	(hl), #0x00
+                                    131 ;main.c:40: bullets[i].direction = 1;
+    0000001C 6B               [ 4]  132 	ld	l, e
+                                    133 ;	spillPairReg hl
+                                    134 ;	spillPairReg hl
+    0000001D 62               [ 4]  135 	ld	h, d
+                                    136 ;	spillPairReg hl
+                                    137 ;	spillPairReg hl
+    0000001E 23               [ 8]  138 	inc	hl
+    0000001F 23               [ 8]  139 	inc	hl
+    00000020 36 01            [12]  140 	ld	(hl), #0x01
+                                    141 ;main.c:41: bullets[i].active = 0;
+    00000022 6B               [ 4]  142 	ld	l, e
+                                    143 ;	spillPairReg hl
+                                    144 ;	spillPairReg hl
+    00000023 62               [ 4]  145 	ld	h, d
+                                    146 ;	spillPairReg hl
+                                    147 ;	spillPairReg hl
+    00000024 23               [ 8]  148 	inc	hl
+    00000025 23               [ 8]  149 	inc	hl
+    00000026 23               [ 8]  150 	inc	hl
+    00000027 36 00            [12]  151 	ld	(hl), #0x00
+                                    152 ;main.c:42: bullets[i].animationCounter = 0;
+    00000029 21 04 00         [12]  153 	ld	hl, #0x0004
+    0000002C 19               [ 8]  154 	add	hl, de
+    0000002D 36 00            [12]  155 	ld	(hl), #0x00
+                                    156 ;main.c:43: bullets[i].spriteIndex = 0;
+    0000002F 21 05 00         [12]  157 	ld	hl, #0x0005
+    00000032 19               [ 8]  158 	add	hl, de
+    00000033 36 00            [12]  159 	ld	(hl), #0x00
+                                    160 ;main.c:37: for (UINT8 i = 0; i < MAX_BULLETS; i++) {
+    00000035 0C               [ 4]  161 	inc	c
+                                    162 ;main.c:45: }
+    00000036 18 CA            [12]  163 	jr	00103$
+                                    164 ;main.c:48: void fire_bullets() {
+                                    165 ;	---------------------------------
+                                    166 ; Function fire_bullets
+                                    167 ; ---------------------------------
+    00000038                        168 _fire_bullets::
+    00000038 E8 F2            [16]  169 	add	sp, #-14
+                                    170 ;main.c:49: for (UINT8 i = 0; i < MAX_BULLETS; i += 2) {
+    0000003A F8 0D            [12]  171 	ldhl	sp,	#13
+    0000003C 36 00            [12]  172 	ld	(hl), #0x00
+    0000003E                        173 00110$:
+    0000003E F8 0D            [12]  174 	ldhl	sp,	#13
+    00000040 7E               [ 8]  175 	ld	a, (hl)
+    00000041 D6 0A            [ 8]  176 	sub	a, #0x0a
+    00000043 D2r2Fr02         [16]  177 	jp	NC, 00112$
+                                    178 ;main.c:50: if (!bullets[i].active && !bullets[i + 1].active) {
+    00000046 4E               [ 8]  179 	ld	c, (hl)
+    00000047 06 00            [ 8]  180 	ld	b, #0x00
+    00000049 69               [ 4]  181 	ld	l, c
+    0000004A 60               [ 4]  182 	ld	h, b
+    0000004B 29               [ 8]  183 	add	hl, hl
+    0000004C 09               [ 8]  184 	add	hl, bc
+    0000004D 29               [ 8]  185 	add	hl, hl
+    0000004E 01r00r00         [12]  186 	ld	bc,#_bullets
+    00000051 09               [ 8]  187 	add	hl,bc
+    00000052 33               [ 8]  188 	inc	sp
+    00000053 33               [ 8]  189 	inc	sp
+    00000054 5D               [ 4]  190 	ld	e, l
+    00000055 54               [ 4]  191 	ld	d, h
+    00000056 D5               [16]  192 	push	de
+    00000057 21 03 00         [12]  193 	ld	hl, #0x0003
+    0000005A 19               [ 8]  194 	add	hl, de
+    0000005B E5               [16]  195 	push	hl
+    0000005C 7D               [ 4]  196 	ld	a, l
+    0000005D F8 0D            [12]  197 	ldhl	sp,	#13
+    0000005F 77               [ 8]  198 	ld	(hl), a
+    00000060 E1               [12]  199 	pop	hl
+    00000061 7C               [ 4]  200 	ld	a, h
+    00000062 F8 0C            [12]  201 	ldhl	sp,	#12
+    00000064 32               [ 8]  202 	ld	(hl-), a
+    00000065 2A               [ 8]  203 	ld	a, (hl+)
+    00000066 5F               [ 4]  204 	ld	e, a
+    00000067 56               [ 8]  205 	ld	d, (hl)
+    00000068 1A               [ 8]  206 	ld	a, (de)
+    00000069 B7               [ 4]  207 	or	a, a
+    0000006A C2r28r02         [16]  208 	jp	NZ, 00111$
+    0000006D 23               [ 8]  209 	inc	hl
+    0000006E 4E               [ 8]  210 	ld	c, (hl)
+    0000006F 0C               [ 4]  211 	inc	c
+    00000070 79               [ 4]  212 	ld	a, c
+    00000071 07               [ 4]  213 	rlca
+    00000072 9F               [ 4]  214 	sbc	a, a
+    00000073 47               [ 4]  215 	ld	b, a
+    00000074 69               [ 4]  216 	ld	l, c
+    00000075 60               [ 4]  217 	ld	h, b
+    00000076 29               [ 8]  218 	add	hl, hl
+    00000077 09               [ 8]  219 	add	hl, bc
+    00000078 29               [ 8]  220 	add	hl, hl
+    00000079 01r00r00         [12]  221 	ld	bc,#_bullets
+    0000007C 09               [ 8]  222 	add	hl,bc
+    0000007D E5               [16]  223 	push	hl
+    0000007E 7D               [ 4]  224 	ld	a, l
+    0000007F F8 04            [12]  225 	ldhl	sp,	#4
+    00000081 77               [ 8]  226 	ld	(hl), a
+    00000082 E1               [12]  227 	pop	hl
+    00000083 7C               [ 4]  228 	ld	a, h
+    00000084 F8 03            [12]  229 	ldhl	sp,	#3
+    00000086 32               [ 8]  230 	ld	(hl-), a
+    00000087 2A               [ 8]  231 	ld	a, (hl+)
+    00000088 4F               [ 4]  232 	ld	c, a
+    00000089 46               [ 8]  233 	ld	b, (hl)
+    0000008A 03               [ 8]  234 	inc	bc
+    0000008B 03               [ 8]  235 	inc	bc
+    0000008C 03               [ 8]  236 	inc	bc
+    0000008D 0A               [ 8]  237 	ld	a, (bc)
+    0000008E B7               [ 4]  238 	or	a, a
+    0000008F C2r28r02         [16]  239 	jp	NZ, 00111$
+                                    240 ;main.c:51: bullets[i].x = hero_x;
+    00000092 D1               [12]  241 	pop	de
+    00000093 D5               [16]  242 	push	de
+    00000094 FAr25r01         [16]  243 	ld	a, (#_hero_x)
+    00000097 12               [ 8]  244 	ld	(de), a
+                                    245 ;main.c:52: bullets[i].y = hero_y;
+    00000098 D1               [12]  246 	pop	de
+    00000099 D5               [16]  247 	push	de
+    0000009A 6B               [ 4]  248 	ld	l, e
+    0000009B 62               [ 4]  249 	ld	h, d
+    0000009C 23               [ 8]  250 	inc	hl
+    0000009D E5               [16]  251 	push	hl
+    0000009E 7D               [ 4]  252 	ld	a, l
+    0000009F F8 06            [12]  253 	ldhl	sp,	#6
+    000000A1 77               [ 8]  254 	ld	(hl), a
+    000000A2 E1               [12]  255 	pop	hl
+    000000A3 7C               [ 4]  256 	ld	a, h
+    000000A4 F8 05            [12]  257 	ldhl	sp,	#5
+    000000A6 32               [ 8]  258 	ld	(hl-), a
+    000000A7 2A               [ 8]  259 	ld	a, (hl+)
+    000000A8 5F               [ 4]  260 	ld	e, a
+    000000A9 56               [ 8]  261 	ld	d, (hl)
+    000000AA FAr26r01         [16]  262 	ld	a, (#_hero_y)
+    000000AD 12               [ 8]  263 	ld	(de), a
+                                    264 ;main.c:53: bullets[i].direction = 1; // Droite
+    000000AE E1               [12]  265 	pop	hl
+    000000AF E5               [16]  266 	push	hl
+    000000B0 23               [ 8]  267 	inc	hl
+    000000B1 23               [ 8]  268 	inc	hl
+    000000B2 36 01            [12]  269 	ld	(hl), #0x01
+                                    270 ;main.c:54: bullets[i].active = 1;
+    000000B4 F8 0B            [12]  271 	ldhl	sp,	#11
+    000000B6 2A               [ 8]  272 	ld	a,	(hl+)
+    000000B7 66               [ 8]  273 	ld	h, (hl)
+    000000B8 6F               [ 4]  274 	ld	l, a
+    000000B9 36 01            [12]  275 	ld	(hl), #0x01
+                                    276 ;main.c:56: bullets[i + 1].x = hero_x;
+    000000BB F8 02            [12]  277 	ldhl	sp,#2
+    000000BD 2A               [ 8]  278 	ld	a, (hl+)
+    000000BE 5F               [ 4]  279 	ld	e, a
+    000000BF 56               [ 8]  280 	ld	d, (hl)
+    000000C0 FAr25r01         [16]  281 	ld	a, (#_hero_x)
+    000000C3 12               [ 8]  282 	ld	(de), a
+                                    283 ;main.c:57: bullets[i + 1].y = hero_y;
+    000000C4 F8 02            [12]  284 	ldhl	sp,#2
+    000000C6 2A               [ 8]  285 	ld	a, (hl+)
+    000000C7 5F               [ 4]  286 	ld	e, a
+    000000C8 56               [ 8]  287 	ld	d, (hl)
+    000000C9 6B               [ 4]  288 	ld	l, e
+    000000CA 62               [ 4]  289 	ld	h, d
+    000000CB 23               [ 8]  290 	inc	hl
+    000000CC E5               [16]  291 	push	hl
+    000000CD 7D               [ 4]  292 	ld	a, l
+    000000CE F8 08            [12]  293 	ldhl	sp,	#8
+    000000D0 77               [ 8]  294 	ld	(hl), a
+    000000D1 E1               [12]  295 	pop	hl
+    000000D2 7C               [ 4]  296 	ld	a, h
+    000000D3 F8 07            [12]  297 	ldhl	sp,	#7
+    000000D5 32               [ 8]  298 	ld	(hl-), a
+    000000D6 2A               [ 8]  299 	ld	a, (hl+)
+    000000D7 5F               [ 4]  300 	ld	e, a
+    000000D8 56               [ 8]  301 	ld	d, (hl)
+    000000D9 FAr26r01         [16]  302 	ld	a, (#_hero_y)
+    000000DC 12               [ 8]  303 	ld	(de), a
+                                    304 ;main.c:58: bullets[i + 1].direction = -1; // Gauche
+    000000DD F8 02            [12]  305 	ldhl	sp,	#2
+    000000DF 2A               [ 8]  306 	ld	a, (hl+)
+    000000E0 66               [ 8]  307 	ld	h, (hl)
+                                    308 ;	spillPairReg hl
+                                    309 ;	spillPairReg hl
+    000000E1 6F               [ 4]  310 	ld	l, a
+                                    311 ;	spillPairReg hl
+                                    312 ;	spillPairReg hl
+    000000E2 23               [ 8]  313 	inc	hl
+    000000E3 23               [ 8]  314 	inc	hl
+    000000E4 36 FF            [12]  315 	ld	(hl), #0xff
+                                    316 ;main.c:59: bullets[i + 1].active = 1;
+    000000E6 3E 01            [ 8]  317 	ld	a, #0x01
+    000000E8 02               [ 8]  318 	ld	(bc), a
+                                    319 ;main.c:62: set_sprite_tile(8 + i, 16);      // Première frame (bullet) pour la droite
+    000000E9 F8 0D            [12]  320 	ldhl	sp,	#13
+    000000EB 7E               [ 8]  321 	ld	a, (hl)
+    000000EC C6 08            [ 8]  322 	add	a, #0x08
+    000000EE F8 08            [12]  323 	ldhl	sp,	#8
+    000000F0 77               [ 8]  324 	ld	(hl), a
+    000000F1 4E               [ 8]  325 	ld	c, (hl)
+                                    326 ;c:\gbdk\include\gb\gb.h:1875: shadow_OAM[nb].tile=tile;
+    000000F2 AF               [ 4]  327 	xor	a, a
+    000000F3 CB 21            [ 8]  328 	sla	c
+    000000F5 8F               [ 4]  329 	adc	a, a
+    000000F6 CB 21            [ 8]  330 	sla	c
+    000000F8 8F               [ 4]  331 	adc	a, a
+    000000F9 F8 0B            [12]  332 	ldhl	sp,	#11
+    000000FB 71               [ 8]  333 	ld	(hl), c
+    000000FC 23               [ 8]  334 	inc	hl
+    000000FD 77               [ 8]  335 	ld	(hl), a
+    000000FE 11r00r00         [12]  336 	ld	de, #_shadow_OAM
+    00000101 3A               [ 8]  337 	ld	a, (hl-)
+    00000102 6E               [ 8]  338 	ld	l, (hl)
+    00000103 67               [ 4]  339 	ld	h, a
+    00000104 19               [ 8]  340 	add	hl, de
+    00000105 E5               [16]  341 	push	hl
+    00000106 7D               [ 4]  342 	ld	a, l
+    00000107 F8 0B            [12]  343 	ldhl	sp,	#11
+    00000109 77               [ 8]  344 	ld	(hl), a
+    0000010A E1               [12]  345 	pop	hl
+    0000010B 7C               [ 4]  346 	ld	a, h
+    0000010C F8 0A            [12]  347 	ldhl	sp,	#10
+    0000010E 32               [ 8]  348 	ld	(hl-), a
+    0000010F 2A               [ 8]  349 	ld	a, (hl+)
+    00000110 5F               [ 4]  350 	ld	e, a
+    00000111 56               [ 8]  351 	ld	d, (hl)
+    00000112 21 02 00         [12]  352 	ld	hl, #0x0002
+    00000115 19               [ 8]  353 	add	hl, de
+    00000116 E5               [16]  354 	push	hl
+    00000117 7D               [ 4]  355 	ld	a, l
+    00000118 F8 0D            [12]  356 	ldhl	sp,	#13
+    0000011A 77               [ 8]  357 	ld	(hl), a
+    0000011B E1               [12]  358 	pop	hl
+    0000011C 7C               [ 4]  359 	ld	a, h
+    0000011D F8 0C            [12]  360 	ldhl	sp,	#12
+    0000011F 32               [ 8]  361 	ld	(hl-), a
+    00000120 2A               [ 8]  362 	ld	a,	(hl+)
+    00000121 66               [ 8]  363 	ld	h, (hl)
+    00000122 6F               [ 4]  364 	ld	l, a
+    00000123 36 10            [12]  365 	ld	(hl), #0x10
+                                    366 ;main.c:63: set_sprite_tile(8 + i + 1, 17);  // Deuxième frame (bullet2) pour la gauche
+    00000125 F8 0D            [12]  367 	ldhl	sp,	#13
+    00000127 7E               [ 8]  368 	ld	a, (hl)
+    00000128 C6 09            [ 8]  369 	add	a, #0x09
+    0000012A F8 09            [12]  370 	ldhl	sp,	#9
+    0000012C 77               [ 8]  371 	ld	(hl), a
+    0000012D 4E               [ 8]  372 	ld	c, (hl)
+                                    373 ;c:\gbdk\include\gb\gb.h:1875: shadow_OAM[nb].tile=tile;
+    0000012E F8 0C            [12]  374 	ldhl	sp,	#12
+    00000130 79               [ 4]  375 	ld	a, c
+    00000131 22               [ 8]  376 	ld	(hl+), a
+    00000132 36 00            [12]  377 	ld	(hl), #0x00
+    00000134 3E 02            [ 8]  378 	ld	a, #0x02
+    00000136                        379 00143$:
+    00000136 F8 0C            [12]  380 	ldhl	sp,	#12
+    00000138 CB 26            [16]  381 	sla	(hl)
+    0000013A 23               [ 8]  382 	inc	hl
+    0000013B CB 16            [16]  383 	rl	(hl)
+    0000013D 3D               [ 4]  384 	dec	a
+    0000013E 20 F6            [12]  385 	jr	NZ, 00143$
+    00000140 2B               [ 8]  386 	dec	hl
+    00000141 2A               [ 8]  387 	ld	a, (hl+)
+    00000142 5F               [ 4]  388 	ld	e, a
+    00000143 56               [ 8]  389 	ld	d, (hl)
+    00000144 21r00r00         [12]  390 	ld	hl, #_shadow_OAM
+    00000147 19               [ 8]  391 	add	hl, de
+    00000148 E5               [16]  392 	push	hl
+    00000149 7D               [ 4]  393 	ld	a, l
+    0000014A F8 0C            [12]  394 	ldhl	sp,	#12
+    0000014C 77               [ 8]  395 	ld	(hl), a
+    0000014D E1               [12]  396 	pop	hl
+    0000014E 7C               [ 4]  397 	ld	a, h
+    0000014F F8 0B            [12]  398 	ldhl	sp,	#11
+    00000151 32               [ 8]  399 	ld	(hl-), a
+    00000152 2A               [ 8]  400 	ld	a, (hl+)
+    00000153 5F               [ 4]  401 	ld	e, a
+    00000154 56               [ 8]  402 	ld	d, (hl)
+    00000155 21 02 00         [12]  403 	ld	hl, #0x0002
+    00000158 19               [ 8]  404 	add	hl, de
+    00000159 E5               [16]  405 	push	hl
+    0000015A 7D               [ 4]  406 	ld	a, l
+    0000015B F8 0E            [12]  407 	ldhl	sp,	#14
+    0000015D 77               [ 8]  408 	ld	(hl), a
+    0000015E E1               [12]  409 	pop	hl
+    0000015F 7C               [ 4]  410 	ld	a, h
+    00000160 F8 0D            [12]  411 	ldhl	sp,	#13
+    00000162 32               [ 8]  412 	ld	(hl-), a
+    00000163 2A               [ 8]  413 	ld	a,	(hl+)
+    00000164 66               [ 8]  414 	ld	h, (hl)
+    00000165 6F               [ 4]  415 	ld	l, a
+    00000166 36 11            [12]  416 	ld	(hl), #0x11
+                                    417 ;main.c:65: move_sprite(8 + i, bullets[i].x, bullets[i].y);
+    00000168 F8 04            [12]  418 	ldhl	sp,#4
+    0000016A 2A               [ 8]  419 	ld	a, (hl+)
+    0000016B 5F               [ 4]  420 	ld	e, a
+    0000016C 56               [ 8]  421 	ld	d, (hl)
+    0000016D 1A               [ 8]  422 	ld	a, (de)
+    0000016E F8 0D            [12]  423 	ldhl	sp,	#13
+    00000170 32               [ 8]  424 	ld	(hl-), a
+    00000171 D1               [12]  425 	pop	de
+    00000172 D5               [16]  426 	push	de
+    00000173 1A               [ 8]  427 	ld	a, (de)
+    00000174 77               [ 8]  428 	ld	(hl), a
+    00000175 F8 08            [12]  429 	ldhl	sp,	#8
+    00000177 7E               [ 8]  430 	ld	a, (hl)
+    00000178 F8 0B            [12]  431 	ldhl	sp,	#11
+    0000017A 77               [ 8]  432 	ld	(hl), a
+                                    433 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
+    0000017B 3A               [ 8]  434 	ld	a, (hl-)
+    0000017C 22               [ 8]  435 	ld	(hl+), a
+    0000017D 36 00            [12]  436 	ld	(hl), #0x00
+    0000017F 3E 02            [ 8]  437 	ld	a, #0x02
+    00000181                        438 00144$:
+    00000181 F8 0A            [12]  439 	ldhl	sp,	#10
+    00000183 CB 26            [16]  440 	sla	(hl)
+    00000185 23               [ 8]  441 	inc	hl
+    00000186 CB 16            [16]  442 	rl	(hl)
+    00000188 3D               [ 4]  443 	dec	a
+    00000189 20 F6            [12]  444 	jr	NZ, 00144$
+    0000018B 2B               [ 8]  445 	dec	hl
+    0000018C 2A               [ 8]  446 	ld	a, (hl+)
+    0000018D 5F               [ 4]  447 	ld	e, a
+    0000018E 56               [ 8]  448 	ld	d, (hl)
+    0000018F 21r00r00         [12]  449 	ld	hl, #_shadow_OAM
+    00000192 19               [ 8]  450 	add	hl, de
+    00000193 E5               [16]  451 	push	hl
+    00000194 7D               [ 4]  452 	ld	a, l
+    00000195 F8 06            [12]  453 	ldhl	sp,	#6
+    00000197 77               [ 8]  454 	ld	(hl), a
+    00000198 E1               [12]  455 	pop	hl
+    00000199 7C               [ 4]  456 	ld	a, h
+    0000019A F8 05            [12]  457 	ldhl	sp,	#5
+    0000019C 32               [ 8]  458 	ld	(hl-), a
+    0000019D 7E               [ 8]  459 	ld	a, (hl)
+    0000019E F8 0A            [12]  460 	ldhl	sp,	#10
+    000001A0 77               [ 8]  461 	ld	(hl), a
+    000001A1 F8 05            [12]  462 	ldhl	sp,	#5
+    000001A3 7E               [ 8]  463 	ld	a, (hl)
+    000001A4 F8 0B            [12]  464 	ldhl	sp,	#11
+                                    465 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
+    000001A6 32               [ 8]  466 	ld	(hl-), a
+    000001A7 2A               [ 8]  467 	ld	a, (hl+)
+    000001A8 5F               [ 4]  468 	ld	e, a
+    000001A9 2A               [ 8]  469 	ld	a, (hl+)
+    000001AA 23               [ 8]  470 	inc	hl
+    000001AB 57               [ 4]  471 	ld	d, a
+    000001AC 3A               [ 8]  472 	ld	a, (hl-)
+    000001AD 2B               [ 8]  473 	dec	hl
+    000001AE 2B               [ 8]  474 	dec	hl
+    000001AF 12               [ 8]  475 	ld	(de), a
+    000001B0 2A               [ 8]  476 	ld	a, (hl+)
+    000001B1 5F               [ 4]  477 	ld	e, a
+    000001B2 56               [ 8]  478 	ld	d, (hl)
+    000001B3 6B               [ 4]  479 	ld	l, e
+    000001B4 62               [ 4]  480 	ld	h, d
+    000001B5 23               [ 8]  481 	inc	hl
+    000001B6 E5               [16]  482 	push	hl
+    000001B7 7D               [ 4]  483 	ld	a, l
+    000001B8 F8 06            [12]  484 	ldhl	sp,	#6
+    000001BA 77               [ 8]  485 	ld	(hl), a
+    000001BB E1               [12]  486 	pop	hl
+    000001BC 7C               [ 4]  487 	ld	a, h
+    000001BD F8 05            [12]  488 	ldhl	sp,	#5
+    000001BF 32               [ 8]  489 	ld	(hl-), a
+    000001C0 2A               [ 8]  490 	ld	a, (hl+)
+    000001C1 5F               [ 4]  491 	ld	e, a
+    000001C2 56               [ 8]  492 	ld	d, (hl)
+    000001C3 F8 0C            [12]  493 	ldhl	sp,	#12
+    000001C5 7E               [ 8]  494 	ld	a, (hl)
+    000001C6 12               [ 8]  495 	ld	(de), a
+                                    496 ;main.c:66: move_sprite(8 + i + 1, bullets[i + 1].x, bullets[i + 1].y);
+    000001C7 F8 06            [12]  497 	ldhl	sp,#6
+    000001C9 2A               [ 8]  498 	ld	a, (hl+)
+    000001CA 5F               [ 4]  499 	ld	e, a
+    000001CB 56               [ 8]  500 	ld	d, (hl)
+    000001CC 1A               [ 8]  501 	ld	a, (de)
+    000001CD F8 0D            [12]  502 	ldhl	sp,	#13
+    000001CF 77               [ 8]  503 	ld	(hl), a
+    000001D0 F8 02            [12]  504 	ldhl	sp,#2
+    000001D2 2A               [ 8]  505 	ld	a, (hl+)
+    000001D3 5F               [ 4]  506 	ld	e, a
+    000001D4 56               [ 8]  507 	ld	d, (hl)
+    000001D5 1A               [ 8]  508 	ld	a, (de)
+    000001D6 F8 0C            [12]  509 	ldhl	sp,	#12
+    000001D8 77               [ 8]  510 	ld	(hl), a
+    000001D9 F8 09            [12]  511 	ldhl	sp,	#9
+    000001DB 2A               [ 8]  512 	ld	a, (hl+)
+    000001DC 23               [ 8]  513 	inc	hl
+    000001DD 77               [ 8]  514 	ld	(hl), a
+                                    515 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
+    000001DE 3A               [ 8]  516 	ld	a, (hl-)
+    000001DF 22               [ 8]  517 	ld	(hl+), a
+    000001E0 36 00            [12]  518 	ld	(hl), #0x00
+    000001E2 3E 02            [ 8]  519 	ld	a, #0x02
+    000001E4                        520 00145$:
+    000001E4 F8 0A            [12]  521 	ldhl	sp,	#10
+    000001E6 CB 26            [16]  522 	sla	(hl)
+    000001E8 23               [ 8]  523 	inc	hl
+    000001E9 CB 16            [16]  524 	rl	(hl)
+    000001EB 3D               [ 4]  525 	dec	a
+    000001EC 20 F6            [12]  526 	jr	NZ, 00145$
+    000001EE 2B               [ 8]  527 	dec	hl
+    000001EF 2A               [ 8]  528 	ld	a, (hl+)
+    000001F0 5F               [ 4]  529 	ld	e, a
+    000001F1 56               [ 8]  530 	ld	d, (hl)
+    000001F2 21r00r00         [12]  531 	ld	hl, #_shadow_OAM
+    000001F5 19               [ 8]  532 	add	hl, de
+    000001F6 E5               [16]  533 	push	hl
+    000001F7 7D               [ 4]  534 	ld	a, l
+    000001F8 F8 0A            [12]  535 	ldhl	sp,	#10
+    000001FA 77               [ 8]  536 	ld	(hl), a
+    000001FB E1               [12]  537 	pop	hl
+    000001FC 7C               [ 4]  538 	ld	a, h
+    000001FD F8 09            [12]  539 	ldhl	sp,	#9
+    000001FF 32               [ 8]  540 	ld	(hl-), a
+    00000200 2A               [ 8]  541 	ld	a, (hl+)
+    00000201 23               [ 8]  542 	inc	hl
+    00000202 32               [ 8]  543 	ld	(hl-), a
+    00000203 2A               [ 8]  544 	ld	a, (hl+)
+    00000204 23               [ 8]  545 	inc	hl
+                                    546 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
+    00000205 32               [ 8]  547 	ld	(hl-), a
+    00000206 2A               [ 8]  548 	ld	a, (hl+)
+    00000207 5F               [ 4]  549 	ld	e, a
+    00000208 2A               [ 8]  550 	ld	a, (hl+)
+    00000209 23               [ 8]  551 	inc	hl
+    0000020A 57               [ 4]  552 	ld	d, a
+    0000020B 3A               [ 8]  553 	ld	a, (hl-)
+    0000020C 2B               [ 8]  554 	dec	hl
+    0000020D 2B               [ 8]  555 	dec	hl
+    0000020E 12               [ 8]  556 	ld	(de), a
+    0000020F 2A               [ 8]  557 	ld	a, (hl+)
+    00000210 5F               [ 4]  558 	ld	e, a
+    00000211 56               [ 8]  559 	ld	d, (hl)
+    00000212 6B               [ 4]  560 	ld	l, e
+    00000213 62               [ 4]  561 	ld	h, d
+    00000214 23               [ 8]  562 	inc	hl
+    00000215 E5               [16]  563 	push	hl
+    00000216 7D               [ 4]  564 	ld	a, l
+    00000217 F8 0A            [12]  565 	ldhl	sp,	#10
+    00000219 77               [ 8]  566 	ld	(hl), a
+    0000021A E1               [12]  567 	pop	hl
+    0000021B 7C               [ 4]  568 	ld	a, h
+    0000021C F8 09            [12]  569 	ldhl	sp,	#9
+    0000021E 32               [ 8]  570 	ld	(hl-), a
+    0000021F 2A               [ 8]  571 	ld	a, (hl+)
+    00000220 5F               [ 4]  572 	ld	e, a
+    00000221 56               [ 8]  573 	ld	d, (hl)
+    00000222 F8 0C            [12]  574 	ldhl	sp,	#12
+    00000224 7E               [ 8]  575 	ld	a, (hl)
+    00000225 12               [ 8]  576 	ld	(de), a
+                                    577 ;main.c:67: return;
+    00000226 18 07            [12]  578 	jr	00112$
+    00000228                        579 00111$:
+                                    580 ;main.c:49: for (UINT8 i = 0; i < MAX_BULLETS; i += 2) {
+    00000228 F8 0D            [12]  581 	ldhl	sp,	#13
+    0000022A 34               [12]  582 	inc	(hl)
+    0000022B 34               [12]  583 	inc	(hl)
+    0000022C C3r3Er00         [16]  584 	jp	00110$
+    0000022F                        585 00112$:
+                                    586 ;main.c:70: }
+    0000022F E8 0E            [16]  587 	add	sp, #14
+    00000231 C9               [16]  588 	ret
+                                    589 ;main.c:73: void update_bullets() {
+                                    590 ;	---------------------------------
+                                    591 ; Function update_bullets
+                                    592 ; ---------------------------------
+    00000232                        593 _update_bullets::
+    00000232 E8 F8            [16]  594 	add	sp, #-8
+                                    595 ;main.c:74: for (UINT8 i = 0; i < MAX_BULLETS; i++) {
+    00000234 F8 07            [12]  596 	ldhl	sp,	#7
+    00000236 36 00            [12]  597 	ld	(hl), #0x00
+    00000238                        598 00117$:
+    00000238 F8 07            [12]  599 	ldhl	sp,	#7
+    0000023A 7E               [ 8]  600 	ld	a, (hl)
+    0000023B D6 0A            [ 8]  601 	sub	a, #0x0a
+    0000023D D2r09r04         [16]  602 	jp	NC, 00119$
+                                    603 ;main.c:75: if (bullets[i].active) {
+    00000240 4E               [ 8]  604 	ld	c, (hl)
+    00000241 06 00            [ 8]  605 	ld	b, #0x00
+    00000243 69               [ 4]  606 	ld	l, c
+    00000244 60               [ 4]  607 	ld	h, b
+    00000245 29               [ 8]  608 	add	hl, hl
+    00000246 09               [ 8]  609 	add	hl, bc
+    00000247 29               [ 8]  610 	add	hl, hl
+    00000248 01r00r00         [12]  611 	ld	bc,#_bullets
+    0000024B 09               [ 8]  612 	add	hl,bc
+    0000024C E5               [16]  613 	push	hl
+    0000024D 7D               [ 4]  614 	ld	a, l
+    0000024E F8 05            [12]  615 	ldhl	sp,	#5
+    00000250 77               [ 8]  616 	ld	(hl), a
+    00000251 E1               [12]  617 	pop	hl
+    00000252 7C               [ 4]  618 	ld	a, h
+    00000253 F8 04            [12]  619 	ldhl	sp,	#4
+    00000255 32               [ 8]  620 	ld	(hl-), a
+    00000256 2A               [ 8]  621 	ld	a, (hl+)
+    00000257 4F               [ 4]  622 	ld	c, a
+    00000258 46               [ 8]  623 	ld	b, (hl)
+    00000259 03               [ 8]  624 	inc	bc
+    0000025A 03               [ 8]  625 	inc	bc
+    0000025B 03               [ 8]  626 	inc	bc
+    0000025C 0A               [ 8]  627 	ld	a, (bc)
+    0000025D B7               [ 4]  628 	or	a, a
+    0000025E CAr03r04         [16]  629 	jp	Z, 00118$
+                                    630 ;main.c:76: bullets[i].x += bullets[i].direction * 4;
+    00000261 2B               [ 8]  631 	dec	hl
+    00000262 2A               [ 8]  632 	ld	a, (hl+)
+    00000263 5F               [ 4]  633 	ld	e, a
+    00000264 3A               [ 8]  634 	ld	a, (hl-)
+    00000265 57               [ 4]  635 	ld	d, a
+    00000266 1A               [ 8]  636 	ld	a, (de)
+    00000267 4F               [ 4]  637 	ld	c, a
+    00000268 2A               [ 8]  638 	ld	a, (hl+)
+    00000269 5F               [ 4]  639 	ld	e, a
+    0000026A 56               [ 8]  640 	ld	d, (hl)
+    0000026B 13               [ 8]  641 	inc	de
+    0000026C 13               [ 8]  642 	inc	de
+    0000026D 1A               [ 8]  643 	ld	a, (de)
+    0000026E 87               [ 4]  644 	add	a, a
+    0000026F 87               [ 4]  645 	add	a, a
+    00000270 81               [ 4]  646 	add	a, c
+    00000271 4F               [ 4]  647 	ld	c, a
+    00000272 3A               [ 8]  648 	ld	a, (hl-)
+    00000273 6E               [ 8]  649 	ld	l, (hl)
+    00000274 67               [ 4]  650 	ld	h, a
+    00000275 71               [ 8]  651 	ld	(hl), c
+                                    652 ;main.c:78: move_sprite(8 + i, bullets[i].x, bullets[i].y);
+    00000276 F8 03            [12]  653 	ldhl	sp,	#3
+    00000278 2A               [ 8]  654 	ld	a, (hl+)
+    00000279 4F               [ 4]  655 	ld	c, a
+    0000027A 3A               [ 8]  656 	ld	a, (hl-)
+    0000027B 47               [ 4]  657 	ld	b, a
+    0000027C 03               [ 8]  658 	inc	bc
+    0000027D 0A               [ 8]  659 	ld	a, (bc)
+    0000027E 4F               [ 4]  660 	ld	c, a
+    0000027F 2A               [ 8]  661 	ld	a, (hl+)
+    00000280 5F               [ 4]  662 	ld	e, a
+    00000281 2A               [ 8]  663 	ld	a, (hl+)
+    00000282 23               [ 8]  664 	inc	hl
+    00000283 57               [ 4]  665 	ld	d, a
+    00000284 1A               [ 8]  666 	ld	a, (de)
+    00000285 22               [ 8]  667 	ld	(hl+), a
+    00000286 7E               [ 8]  668 	ld	a, (hl)
+    00000287 C6 08            [ 8]  669 	add	a, #0x08
+    00000289 F8 00            [12]  670 	ldhl	sp,	#0
+    0000028B 77               [ 8]  671 	ld	(hl), a
+                                    672 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
+    0000028C 6E               [ 8]  673 	ld	l, (hl)
+                                    674 ;	spillPairReg hl
+                                    675 ;	spillPairReg hl
+    0000028D AF               [ 4]  676 	xor	a, a
+    0000028E 67               [ 4]  677 	ld	h, a
+    0000028F 29               [ 8]  678 	add	hl, hl
+    00000290 29               [ 8]  679 	add	hl, hl
+    00000291 11r00r00         [12]  680 	ld	de, #_shadow_OAM
+    00000294 19               [ 8]  681 	add	hl, de
+                                    682 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
+    00000295 79               [ 4]  683 	ld	a, c
+    00000296 22               [ 8]  684 	ld	(hl+), a
+    00000297 4D               [ 4]  685 	ld	c, l
+    00000298 44               [ 4]  686 	ld	b, h
+    00000299 F8 06            [12]  687 	ldhl	sp,	#6
+                                    688 ;main.c:81: bullets[i].animationCounter++;
+    0000029B 3A               [ 8]  689 	ld	a, (hl-)
+    0000029C 2B               [ 8]  690 	dec	hl
+    0000029D 2B               [ 8]  691 	dec	hl
+    0000029E 02               [ 8]  692 	ld	(bc), a
+    0000029F 2A               [ 8]  693 	ld	a, (hl+)
+    000002A0 5F               [ 4]  694 	ld	e, a
+    000002A1 56               [ 8]  695 	ld	d, (hl)
+    000002A2 21 04 00         [12]  696 	ld	hl, #0x0004
+    000002A5 19               [ 8]  697 	add	hl, de
+    000002A6 4D               [ 4]  698 	ld	c, l
+    000002A7 44               [ 4]  699 	ld	b, h
+    000002A8 0A               [ 8]  700 	ld	a, (bc)
+    000002A9 3C               [ 4]  701 	inc	a
+    000002AA 5F               [ 4]  702 	ld	e, a
+    000002AB 02               [ 8]  703 	ld	(bc), a
+                                    704 ;main.c:82: if (bullets[i].animationCounter > 1) {
+    000002AC 3E 01            [ 8]  705 	ld	a, #0x01
+    000002AE 93               [ 4]  706 	sub	a, e
+    000002AF 30 59            [12]  707 	jr	NC, 00102$
+                                    708 ;main.c:83: bullets[i].spriteIndex = bullets[i].spriteIndex == 0 ? 1 : 0;
+    000002B1 F8 03            [12]  709 	ldhl	sp,#3
+    000002B3 2A               [ 8]  710 	ld	a, (hl+)
+    000002B4 5F               [ 4]  711 	ld	e, a
+    000002B5 56               [ 8]  712 	ld	d, (hl)
+    000002B6 21 05 00         [12]  713 	ld	hl, #0x0005
+    000002B9 19               [ 8]  714 	add	hl, de
+    000002BA E5               [16]  715 	push	hl
+    000002BB 7D               [ 4]  716 	ld	a, l
+    000002BC F8 07            [12]  717 	ldhl	sp,	#7
+    000002BE 77               [ 8]  718 	ld	(hl), a
+    000002BF E1               [12]  719 	pop	hl
+    000002C0 7C               [ 4]  720 	ld	a, h
+    000002C1 F8 06            [12]  721 	ldhl	sp,	#6
+    000002C3 32               [ 8]  722 	ld	(hl-), a
+    000002C4 2A               [ 8]  723 	ld	a, (hl+)
+    000002C5 5F               [ 4]  724 	ld	e, a
+    000002C6 56               [ 8]  725 	ld	d, (hl)
+    000002C7 1A               [ 8]  726 	ld	a, (de)
+    000002C8 B7               [ 4]  727 	or	a, a
+    000002C9 0E 01            [ 8]  728 	ld	c, #0x01
+    000002CB 28 02            [12]  729 	jr	Z, 00122$
+    000002CD 0E 00            [ 8]  730 	ld	c, #0x00
+    000002CF                        731 00122$:
+    000002CF F8 05            [12]  732 	ldhl	sp,	#5
+    000002D1 2A               [ 8]  733 	ld	a,	(hl+)
+    000002D2 66               [ 8]  734 	ld	h, (hl)
+    000002D3 6F               [ 4]  735 	ld	l, a
+    000002D4 71               [ 8]  736 	ld	(hl), c
+                                    737 ;main.c:84: set_sprite_tile(8 + i, 16 + bullets[i].spriteIndex);
+    000002D5 F8 07            [12]  738 	ldhl	sp,	#7
+    000002D7 4E               [ 8]  739 	ld	c, (hl)
+    000002D8 06 00            [ 8]  740 	ld	b, #0x00
+    000002DA 69               [ 4]  741 	ld	l, c
+    000002DB 60               [ 4]  742 	ld	h, b
+    000002DC 29               [ 8]  743 	add	hl, hl
+    000002DD 09               [ 8]  744 	add	hl, bc
+    000002DE 29               [ 8]  745 	add	hl, hl
+    000002DF 3Er00            [ 8]  746 	ld	a, #<(_bullets)
+    000002E1 85               [ 4]  747 	add	a, l
+    000002E2 4F               [ 4]  748 	ld	c, a
+    000002E3 3Es00            [ 8]  749 	ld	a, #>(_bullets)
+    000002E5 8C               [ 4]  750 	adc	a, h
+    000002E6 47               [ 4]  751 	ld	b, a
+    000002E7 21 05 00         [12]  752 	ld	hl, #0x0005
+    000002EA 09               [ 8]  753 	add	hl, bc
+    000002EB 7E               [ 8]  754 	ld	a, (hl)
+    000002EC C6 10            [ 8]  755 	add	a, #0x10
+    000002EE F8 06            [12]  756 	ldhl	sp,	#6
+    000002F0 77               [ 8]  757 	ld	(hl), a
+    000002F1 F8 00            [12]  758 	ldhl	sp,	#0
+                                    759 ;c:\gbdk\include\gb\gb.h:1875: shadow_OAM[nb].tile=tile;
+    000002F3 6E               [ 8]  760 	ld	l, (hl)
+                                    761 ;	spillPairReg hl
+                                    762 ;	spillPairReg hl
+    000002F4 26 00            [ 8]  763 	ld	h, #0x00
+                                    764 ;	spillPairReg hl
+                                    765 ;	spillPairReg hl
+    000002F6 29               [ 8]  766 	add	hl, hl
+    000002F7 29               [ 8]  767 	add	hl, hl
+    000002F8 11r00r00         [12]  768 	ld	de, #_shadow_OAM
+    000002FB 19               [ 8]  769 	add	hl, de
+    000002FC 23               [ 8]  770 	inc	hl
+    000002FD 23               [ 8]  771 	inc	hl
+    000002FE 5D               [ 4]  772 	ld	e, l
+    000002FF 54               [ 4]  773 	ld	d, h
+    00000300 F8 06            [12]  774 	ldhl	sp,	#6
+    00000302 7E               [ 8]  775 	ld	a, (hl)
+    00000303 12               [ 8]  776 	ld	(de), a
+                                    777 ;main.c:85: bullets[i].animationCounter = 0;
+    00000304 21 04 00         [12]  778 	ld	hl, #0x0004
+    00000307 09               [ 8]  779 	add	hl, bc
+    00000308 36 00            [12]  780 	ld	(hl), #0x00
+    0000030A                        781 00102$:
+                                    782 ;main.c:89: if (bullets[i].x > 160 || bullets[i].x < 0 ||
+    0000030A F8 07            [12]  783 	ldhl	sp,	#7
+    0000030C 4E               [ 8]  784 	ld	c, (hl)
+    0000030D 06 00            [ 8]  785 	ld	b, #0x00
+    0000030F 69               [ 4]  786 	ld	l, c
+    00000310 60               [ 4]  787 	ld	h, b
+    00000311 29               [ 8]  788 	add	hl, hl
+    00000312 09               [ 8]  789 	add	hl, bc
+    00000313 29               [ 8]  790 	add	hl, hl
+    00000314 01r00r00         [12]  791 	ld	bc,#_bullets
+    00000317 09               [ 8]  792 	add	hl,bc
+    00000318 E5               [16]  793 	push	hl
+    00000319 7D               [ 4]  794 	ld	a, l
+    0000031A F8 03            [12]  795 	ldhl	sp,	#3
+    0000031C 77               [ 8]  796 	ld	(hl), a
+    0000031D E1               [12]  797 	pop	hl
+    0000031E 7C               [ 4]  798 	ld	a, h
+    0000031F F8 02            [12]  799 	ldhl	sp,	#2
+    00000321 32               [ 8]  800 	ld	(hl-), a
+    00000322 2A               [ 8]  801 	ld	a, (hl+)
+    00000323 5F               [ 4]  802 	ld	e, a
+    00000324 56               [ 8]  803 	ld	d, (hl)
+    00000325 1A               [ 8]  804 	ld	a, (de)
+    00000326 F8 06            [12]  805 	ldhl	sp,	#6
+    00000328 77               [ 8]  806 	ld	(hl), a
+    00000329 3E A0            [ 8]  807 	ld	a, #0xa0
+    0000032B 96               [ 8]  808 	sub	a, (hl)
+    0000032C DArEAr03         [16]  809 	jp	C, 00103$
+                                    810 ;main.c:90: (bullets[i].x > enemy_x - 8 && bullets[i].x < enemy_x + 8 &&
+    0000032F 21r20r01         [12]  811 	ld	hl, #_enemy_x
+    00000332 4E               [ 8]  812 	ld	c, (hl)
+    00000333 06 00            [ 8]  813 	ld	b, #0x00
+    00000335 11 08 00         [12]  814 	ld	de, #0x0008
+    00000338 79               [ 4]  815 	ld	a, c
+    00000339 93               [ 4]  816 	sub	a, e
+    0000033A 5F               [ 4]  817 	ld	e, a
+    0000033B 78               [ 4]  818 	ld	a, b
+    0000033C 9A               [ 4]  819 	sbc	a, d
+    0000033D F8 04            [12]  820 	ldhl	sp,	#4
+    0000033F 32               [ 8]  821 	ld	(hl-), a
+    00000340 73               [ 8]  822 	ld	(hl), e
+    00000341 F8 06            [12]  823 	ldhl	sp,	#6
+    00000343 3A               [ 8]  824 	ld	a, (hl-)
+    00000344 22               [ 8]  825 	ld	(hl+), a
+    00000345 36 00            [12]  826 	ld	(hl), #0x00
+    00000347 F8 03            [12]  827 	ldhl	sp,	#3
+    00000349 5D               [ 4]  828 	ld	e, l
+    0000034A 54               [ 4]  829 	ld	d, h
+    0000034B F8 05            [12]  830 	ldhl	sp,	#5
+    0000034D 1A               [ 8]  831 	ld	a, (de)
+    0000034E 13               [ 8]  832 	inc	de
+    0000034F 96               [ 8]  833 	sub	a, (hl)
+    00000350 23               [ 8]  834 	inc	hl
+    00000351 1A               [ 8]  835 	ld	a, (de)
+    00000352 9E               [ 8]  836 	sbc	a, (hl)
+    00000353 1A               [ 8]  837 	ld	a, (de)
+    00000354 57               [ 4]  838 	ld	d, a
+    00000355 CB 7E            [12]  839 	bit	7, (hl)
+    00000357 28 07            [12]  840 	jr	Z, 00187$
+    00000359 CB 7A            [ 8]  841 	bit	7, d
+    0000035B 20 08            [12]  842 	jr	NZ, 00188$
+    0000035D BF               [ 4]  843 	cp	a, a
+    0000035E 18 05            [12]  844 	jr	00188$
+    00000360                        845 00187$:
+    00000360 CB 7A            [ 8]  846 	bit	7, d
+    00000362 28 01            [12]  847 	jr	Z, 00188$
+    00000364 37               [ 4]  848 	scf
+    00000365                        849 00188$:
+    00000365 D2r03r04         [16]  850 	jp	NC, 00118$
+    00000368 21 08 00         [12]  851 	ld	hl, #0x0008
+    0000036B 09               [ 8]  852 	add	hl, bc
+    0000036C 4D               [ 4]  853 	ld	c, l
+    0000036D 44               [ 4]  854 	ld	b, h
+    0000036E F8 05            [12]  855 	ldhl	sp,	#5
+    00000370 2A               [ 8]  856 	ld	a, (hl+)
+    00000371 91               [ 4]  857 	sub	a, c
+    00000372 7E               [ 8]  858 	ld	a, (hl)
+    00000373 98               [ 4]  859 	sbc	a, b
+    00000374 56               [ 8]  860 	ld	d, (hl)
+    00000375 78               [ 4]  861 	ld	a, b
+    00000376 CB 7F            [ 8]  862 	bit	7,a
+    00000378 28 07            [12]  863 	jr	Z, 00189$
+    0000037A CB 7A            [ 8]  864 	bit	7, d
+    0000037C 20 08            [12]  865 	jr	NZ, 00190$
+    0000037E BF               [ 4]  866 	cp	a, a
+    0000037F 18 05            [12]  867 	jr	00190$
+    00000381                        868 00189$:
+    00000381 CB 7A            [ 8]  869 	bit	7, d
+    00000383 28 01            [12]  870 	jr	Z, 00190$
+    00000385 37               [ 4]  871 	scf
+    00000386                        872 00190$:
+    00000386 30 7B            [12]  873 	jr	NC, 00118$
+                                    874 ;main.c:91: bullets[i].y > enemy_y - 8 && bullets[i].y < enemy_y + 8)) {
+    00000388 F8 01            [12]  875 	ldhl	sp,	#1
+    0000038A 2A               [ 8]  876 	ld	a, (hl+)
+    0000038B 4F               [ 4]  877 	ld	c, a
+    0000038C 46               [ 8]  878 	ld	b, (hl)
+    0000038D 03               [ 8]  879 	inc	bc
+    0000038E 0A               [ 8]  880 	ld	a, (bc)
+    0000038F F8 06            [12]  881 	ldhl	sp,	#6
+    00000391 77               [ 8]  882 	ld	(hl), a
+    00000392 21r21r01         [12]  883 	ld	hl, #_enemy_y
+    00000395 4E               [ 8]  884 	ld	c, (hl)
+    00000396 06 00            [ 8]  885 	ld	b, #0x00
+    00000398 11 08 00         [12]  886 	ld	de, #0x0008
+    0000039B 79               [ 4]  887 	ld	a, c
+    0000039C 93               [ 4]  888 	sub	a, e
+    0000039D 5F               [ 4]  889 	ld	e, a
+    0000039E 78               [ 4]  890 	ld	a, b
+    0000039F 9A               [ 4]  891 	sbc	a, d
+    000003A0 F8 04            [12]  892 	ldhl	sp,	#4
+    000003A2 32               [ 8]  893 	ld	(hl-), a
+    000003A3 73               [ 8]  894 	ld	(hl), e
+    000003A4 F8 06            [12]  895 	ldhl	sp,	#6
+    000003A6 3A               [ 8]  896 	ld	a, (hl-)
+    000003A7 22               [ 8]  897 	ld	(hl+), a
+    000003A8 36 00            [12]  898 	ld	(hl), #0x00
+    000003AA F8 03            [12]  899 	ldhl	sp,	#3
+    000003AC 5D               [ 4]  900 	ld	e, l
+    000003AD 54               [ 4]  901 	ld	d, h
+    000003AE F8 05            [12]  902 	ldhl	sp,	#5
+    000003B0 1A               [ 8]  903 	ld	a, (de)
+    000003B1 13               [ 8]  904 	inc	de
+    000003B2 96               [ 8]  905 	sub	a, (hl)
+    000003B3 23               [ 8]  906 	inc	hl
+    000003B4 1A               [ 8]  907 	ld	a, (de)
+    000003B5 9E               [ 8]  908 	sbc	a, (hl)
+    000003B6 1A               [ 8]  909 	ld	a, (de)
+    000003B7 57               [ 4]  910 	ld	d, a
+    000003B8 CB 7E            [12]  911 	bit	7, (hl)
+    000003BA 28 07            [12]  912 	jr	Z, 00191$
+    000003BC CB 7A            [ 8]  913 	bit	7, d
+    000003BE 20 08            [12]  914 	jr	NZ, 00192$
+    000003C0 BF               [ 4]  915 	cp	a, a
+    000003C1 18 05            [12]  916 	jr	00192$
+    000003C3                        917 00191$:
+    000003C3 CB 7A            [ 8]  918 	bit	7, d
+    000003C5 28 01            [12]  919 	jr	Z, 00192$
+    000003C7 37               [ 4]  920 	scf
+    000003C8                        921 00192$:
+    000003C8 30 39            [12]  922 	jr	NC, 00118$
+    000003CA 21 08 00         [12]  923 	ld	hl, #0x0008
+    000003CD 09               [ 8]  924 	add	hl, bc
+    000003CE 4D               [ 4]  925 	ld	c, l
+    000003CF 44               [ 4]  926 	ld	b, h
+    000003D0 F8 05            [12]  927 	ldhl	sp,	#5
+    000003D2 2A               [ 8]  928 	ld	a, (hl+)
+    000003D3 91               [ 4]  929 	sub	a, c
+    000003D4 7E               [ 8]  930 	ld	a, (hl)
+    000003D5 98               [ 4]  931 	sbc	a, b
+    000003D6 56               [ 8]  932 	ld	d, (hl)
+    000003D7 78               [ 4]  933 	ld	a, b
+    000003D8 CB 7F            [ 8]  934 	bit	7,a
+    000003DA 28 07            [12]  935 	jr	Z, 00193$
+    000003DC CB 7A            [ 8]  936 	bit	7, d
+    000003DE 20 08            [12]  937 	jr	NZ, 00194$
+    000003E0 BF               [ 4]  938 	cp	a, a
+    000003E1 18 05            [12]  939 	jr	00194$
+    000003E3                        940 00193$:
+    000003E3 CB 7A            [ 8]  941 	bit	7, d
+    000003E5 28 01            [12]  942 	jr	Z, 00194$
+    000003E7 37               [ 4]  943 	scf
+    000003E8                        944 00194$:
+    000003E8 30 19            [12]  945 	jr	NC, 00118$
+    000003EA                        946 00103$:
+                                    947 ;main.c:92: bullets[i].active = 0;
+    000003EA F8 01            [12]  948 	ldhl	sp,	#1
+    000003EC 2A               [ 8]  949 	ld	a, (hl+)
+    000003ED 4F               [ 4]  950 	ld	c, a
+                                    951 ;main.c:93: move_sprite(8 + i, 0, 0); // Déplace le sprite hors écran
+    000003EE 3A               [ 8]  952 	ld	a, (hl-)
+    000003EF 2B               [ 8]  953 	dec	hl
+    000003F0 47               [ 4]  954 	ld	b, a
+    000003F1 03               [ 8]  955 	inc	bc
+    000003F2 03               [ 8]  956 	inc	bc
+    000003F3 03               [ 8]  957 	inc	bc
+    000003F4 AF               [ 4]  958 	xor	a, a
+    000003F5 02               [ 8]  959 	ld	(bc), a
+    000003F6 4E               [ 8]  960 	ld	c, (hl)
+                                    961 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
+    000003F7 AF               [ 4]  962 	xor	a, a
+    000003F8 69               [ 4]  963 	ld	l, c
+    000003F9 67               [ 4]  964 	ld	h, a
+    000003FA 29               [ 8]  965 	add	hl, hl
+    000003FB 29               [ 8]  966 	add	hl, hl
+    000003FC 11r00r00         [12]  967 	ld	de, #_shadow_OAM
+    000003FF 19               [ 8]  968 	add	hl, de
+                                    969 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
+    00000400 AF               [ 4]  970 	xor	a, a
+    00000401 22               [ 8]  971 	ld	(hl+), a
+    00000402 77               [ 8]  972 	ld	(hl), a
+                                    973 ;main.c:93: move_sprite(8 + i, 0, 0); // Déplace le sprite hors écran
+    00000403                        974 00118$:
+                                    975 ;main.c:74: for (UINT8 i = 0; i < MAX_BULLETS; i++) {
+    00000403 F8 07            [12]  976 	ldhl	sp,	#7
+    00000405 34               [12]  977 	inc	(hl)
+    00000406 C3r38r02         [16]  978 	jp	00117$
+    00000409                        979 00119$:
+                                    980 ;main.c:97: }
+    00000409 E8 08            [16]  981 	add	sp, #8
+    0000040B C9               [16]  982 	ret
+                                    983 ;main.c:100: void update_enemy_sprite() {
+                                    984 ;	---------------------------------
+                                    985 ; Function update_enemy_sprite
+                                    986 ; ---------------------------------
+    0000040C                        987 _update_enemy_sprite::
+                                    988 ;main.c:101: int move_x = 0;
+                                    989 ;main.c:102: int move_y = 0;
+    0000040C 0E 00            [ 8]  990 	ld	c, #0x00
+    0000040E 51               [ 4]  991 	ld	d, c
+                                    992 ;main.c:104: if (enemy_x < hero_x) move_x = 1;
+    0000040F FAr20r01         [16]  993 	ld	a, (#_enemy_x)
+    00000412 21r25r01         [12]  994 	ld	hl, #_hero_x
+    00000415 96               [ 8]  995 	sub	a, (hl)
+    00000416 30 04            [12]  996 	jr	NC, 00104$
+    00000418 0E 01            [ 8]  997 	ld	c, #0x01
+    0000041A 18 0B            [12]  998 	jr	00105$
+    0000041C                        999 00104$:
+                                   1000 ;main.c:105: else if (enemy_x > hero_x) move_x = -1;
+    0000041C FAr25r01         [16] 1001 	ld	a, (#_hero_x)
+    0000041F 21r20r01         [12] 1002 	ld	hl, #_enemy_x
+    00000422 96               [ 8] 1003 	sub	a, (hl)
+    00000423 30 02            [12] 1004 	jr	NC, 00105$
+    00000425 0E FF            [ 8] 1005 	ld	c, #0xff
+    00000427                       1006 00105$:
+                                   1007 ;main.c:107: if (enemy_y < hero_y) move_y = 1;
+    00000427 FAr21r01         [16] 1008 	ld	a, (#_enemy_y)
+    0000042A 21r26r01         [12] 1009 	ld	hl, #_hero_y
+    0000042D 96               [ 8] 1010 	sub	a, (hl)
+    0000042E 30 04            [12] 1011 	jr	NC, 00109$
+    00000430 16 01            [ 8] 1012 	ld	d, #0x01
+    00000432 18 0B            [12] 1013 	jr	00110$
+    00000434                       1014 00109$:
+                                   1015 ;main.c:108: else if (enemy_y > hero_y) move_y = -1;
+    00000434 FAr26r01         [16] 1016 	ld	a, (#_hero_y)
+    00000437 21r21r01         [12] 1017 	ld	hl, #_enemy_y
+    0000043A 96               [ 8] 1018 	sub	a, (hl)
+    0000043B 30 02            [12] 1019 	jr	NC, 00110$
+    0000043D 16 FF            [ 8] 1020 	ld	d, #0xff
+    0000043F                       1021 00110$:
+                                   1022 ;main.c:110: enemy_x += move_x * 2 * enemySpeed;
+    0000043F CB 21            [ 8] 1023 	sla	c
+    00000441 D5               [16] 1024 	push	de
+    00000442 21r23r01         [12] 1025 	ld	hl, #_enemySpeed
+    00000445 5E               [ 8] 1026 	ld	e, (hl)
+    00000446 79               [ 4] 1027 	ld	a, c
+    00000447 CDr00r00         [24] 1028 	call	__muluschar
+    0000044A D1               [12] 1029 	pop	de
+    0000044B 21r20r01         [12] 1030 	ld	hl, #_enemy_x
+    0000044E 7E               [ 8] 1031 	ld	a, (hl)
+    0000044F 81               [ 4] 1032 	add	a, c
+    00000450 77               [ 8] 1033 	ld	(hl), a
+                                   1034 ;main.c:111: enemy_y += move_y * 2 * enemySpeed;
+    00000451 CB 22            [ 8] 1035 	sla	d
+    00000453 21r23r01         [12] 1036 	ld	hl, #_enemySpeed
+    00000456 5E               [ 8] 1037 	ld	e, (hl)
+    00000457 7A               [ 4] 1038 	ld	a, d
+    00000458 CDr00r00         [24] 1039 	call	__muluschar
+    0000045B 21r21r01         [12] 1040 	ld	hl, #_enemy_y
+    0000045E 7E               [ 8] 1041 	ld	a, (hl)
+    0000045F 81               [ 4] 1042 	add	a, c
+    00000460 77               [ 8] 1043 	ld	(hl), a
+                                   1044 ;main.c:113: if (enemy_x > 150) enemy_x = 150;
+    00000461 3E 96            [ 8] 1045 	ld	a, #0x96
+    00000463 21r20r01         [12] 1046 	ld	hl, #_enemy_x
+    00000466 96               [ 8] 1047 	sub	a, (hl)
+    00000467 30 02            [12] 1048 	jr	NC, 00112$
+    00000469 36 96            [12] 1049 	ld	(hl), #0x96
+    0000046B                       1050 00112$:
+                                   1051 ;main.c:114: if (enemy_x < 10) enemy_x = 10;
+    0000046B 21r20r01         [12] 1052 	ld	hl, #_enemy_x
+    0000046E 7E               [ 8] 1053 	ld	a, (hl)
+    0000046F D6 0A            [ 8] 1054 	sub	a, #0x0a
+    00000471 30 02            [12] 1055 	jr	NC, 00114$
+    00000473 36 0A            [12] 1056 	ld	(hl), #0x0a
+    00000475                       1057 00114$:
+                                   1058 ;main.c:115: if (enemy_y > 140) enemy_y = 140;
+    00000475 3E 8C            [ 8] 1059 	ld	a, #0x8c
+    00000477 21r21r01         [12] 1060 	ld	hl, #_enemy_y
+    0000047A 96               [ 8] 1061 	sub	a, (hl)
+    0000047B 30 02            [12] 1062 	jr	NC, 00116$
+    0000047D 36 8C            [12] 1063 	ld	(hl), #0x8c
+    0000047F                       1064 00116$:
+                                   1065 ;main.c:116: if (enemy_y < 10) enemy_y = 10;
+    0000047F 21r21r01         [12] 1066 	ld	hl, #_enemy_y
+    00000482 7E               [ 8] 1067 	ld	a, (hl)
+    00000483 D6 0A            [ 8] 1068 	sub	a, #0x0a
+    00000485 30 02            [12] 1069 	jr	NC, 00118$
+    00000487 36 0A            [12] 1070 	ld	(hl), #0x0a
+    00000489                       1071 00118$:
+                                   1072 ;main.c:118: move_sprite(4, enemy_x, enemy_y);
+    00000489 21r21r01         [12] 1073 	ld	hl, #_enemy_y
+    0000048C 46               [ 8] 1074 	ld	b, (hl)
+    0000048D 21r20r01         [12] 1075 	ld	hl, #_enemy_x
+    00000490 4E               [ 8] 1076 	ld	c, (hl)
+                                   1077 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
+    00000491 21r10r00         [12] 1078 	ld	hl, #(_shadow_OAM + 16)
+                                   1079 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
+    00000494 78               [ 4] 1080 	ld	a, b
+    00000495 22               [ 8] 1081 	ld	(hl+), a
+    00000496 71               [ 8] 1082 	ld	(hl), c
+                                   1083 ;main.c:119: move_sprite(5, enemy_x + 8, enemy_y);
+    00000497 21r21r01         [12] 1084 	ld	hl, #_enemy_y
+    0000049A 46               [ 8] 1085 	ld	b, (hl)
+    0000049B FAr20r01         [16] 1086 	ld	a, (#_enemy_x)
+    0000049E C6 08            [ 8] 1087 	add	a, #0x08
+    000004A0 4F               [ 4] 1088 	ld	c, a
+                                   1089 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
+    000004A1 21r14r00         [12] 1090 	ld	hl, #(_shadow_OAM + 20)
+                                   1091 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
+    000004A4 78               [ 4] 1092 	ld	a, b
+    000004A5 22               [ 8] 1093 	ld	(hl+), a
+    000004A6 71               [ 8] 1094 	ld	(hl), c
+                                   1095 ;main.c:120: move_sprite(6, enemy_x, enemy_y + 8);
+    000004A7 FAr21r01         [16] 1096 	ld	a, (#_enemy_y)
+    000004AA C6 08            [ 8] 1097 	add	a, #0x08
+    000004AC 47               [ 4] 1098 	ld	b, a
+    000004AD 21r20r01         [12] 1099 	ld	hl, #_enemy_x
+    000004B0 4E               [ 8] 1100 	ld	c, (hl)
+                                   1101 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
+    000004B1 21r18r00         [12] 1102 	ld	hl, #(_shadow_OAM + 24)
+                                   1103 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
+    000004B4 78               [ 4] 1104 	ld	a, b
+    000004B5 22               [ 8] 1105 	ld	(hl+), a
+    000004B6 71               [ 8] 1106 	ld	(hl), c
+                                   1107 ;main.c:121: move_sprite(7, enemy_x + 8, enemy_y + 8);
+    000004B7 FAr21r01         [16] 1108 	ld	a, (#_enemy_y)
+    000004BA C6 08            [ 8] 1109 	add	a, #0x08
+    000004BC 47               [ 4] 1110 	ld	b, a
+    000004BD FAr20r01         [16] 1111 	ld	a, (#_enemy_x)
+    000004C0 C6 08            [ 8] 1112 	add	a, #0x08
+    000004C2 4F               [ 4] 1113 	ld	c, a
+                                   1114 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
+    000004C3 21r1Cr00         [12] 1115 	ld	hl, #(_shadow_OAM + 28)
+                                   1116 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
+    000004C6 78               [ 4] 1117 	ld	a, b
+    000004C7 22               [ 8] 1118 	ld	(hl+), a
+    000004C8 71               [ 8] 1119 	ld	(hl), c
+                                   1120 ;main.c:123: enemyAnimationCounter++;
+    000004C9 21r24r01         [12] 1121 	ld	hl, #_enemyAnimationCounter
+    000004CC 34               [12] 1122 	inc	(hl)
+                                   1123 ;main.c:125: if (enemyAnimationCounter > 1) {
+    000004CD 3E 01            [ 8] 1124 	ld	a, #0x01
+    000004CF 96               [ 8] 1125 	sub	a, (hl)
+    000004D0 D0               [20] 1126 	ret	NC
+                                   1127 ;main.c:126: if (enemySpriteIndex == 0) {
+    000004D1 FAr22r01         [16] 1128 	ld	a, (#_enemySpriteIndex)
+    000004D4 B7               [ 4] 1129 	or	a, a
+    000004D5 20 1B            [12] 1130 	jr	NZ, 00120$
+                                   1131 ;c:\gbdk\include\gb\gb.h:1875: shadow_OAM[nb].tile=tile;
+    000004D7 21r12r00         [12] 1132 	ld	hl, #(_shadow_OAM + 18)
+    000004DA 36 08            [12] 1133 	ld	(hl), #0x08
+    000004DC 21r16r00         [12] 1134 	ld	hl, #(_shadow_OAM + 22)
+    000004DF 36 09            [12] 1135 	ld	(hl), #0x09
+    000004E1 21r1Ar00         [12] 1136 	ld	hl, #(_shadow_OAM + 26)
+    000004E4 36 0A            [12] 1137 	ld	(hl), #0x0a
+    000004E6 21r1Er00         [12] 1138 	ld	hl, #(_shadow_OAM + 30)
+    000004E9 36 0B            [12] 1139 	ld	(hl), #0x0b
+                                   1140 ;main.c:131: enemySpriteIndex = 1;
+    000004EB 21r22r01         [12] 1141 	ld	hl, #_enemySpriteIndex
+    000004EE 36 01            [12] 1142 	ld	(hl), #0x01
+    000004F0 18 19            [12] 1143 	jr	00121$
+    000004F2                       1144 00120$:
+                                   1145 ;c:\gbdk\include\gb\gb.h:1875: shadow_OAM[nb].tile=tile;
+    000004F2 21r12r00         [12] 1146 	ld	hl, #(_shadow_OAM + 18)
+    000004F5 36 0C            [12] 1147 	ld	(hl), #0x0c
+    000004F7 21r16r00         [12] 1148 	ld	hl, #(_shadow_OAM + 22)
+    000004FA 36 0D            [12] 1149 	ld	(hl), #0x0d
+    000004FC 21r1Ar00         [12] 1150 	ld	hl, #(_shadow_OAM + 26)
+    000004FF 36 0E            [12] 1151 	ld	(hl), #0x0e
+    00000501 21r1Er00         [12] 1152 	ld	hl, #(_shadow_OAM + 30)
+    00000504 36 0F            [12] 1153 	ld	(hl), #0x0f
+                                   1154 ;main.c:137: enemySpriteIndex = 0;
+    00000506 21r22r01         [12] 1155 	ld	hl, #_enemySpriteIndex
+    00000509 36 00            [12] 1156 	ld	(hl), #0x00
+    0000050B                       1157 00121$:
+                                   1158 ;main.c:139: enemyAnimationCounter = 0;
+    0000050B 21r24r01         [12] 1159 	ld	hl, #_enemyAnimationCounter
+    0000050E 36 00            [12] 1160 	ld	(hl), #0x00
+                                   1161 ;main.c:141: }
+    00000510 C9               [16] 1162 	ret
+                                   1163 ;main.c:144: void update_hero_sprite() {
+                                   1164 ;	---------------------------------
+                                   1165 ; Function update_hero_sprite
+                                   1166 ; ---------------------------------
+    00000511                       1167 _update_hero_sprite::
+                                   1168 ;main.c:145: UINT8 move_x = 0;
+                                   1169 ;main.c:146: UINT8 move_y = 0;
+    00000511 01 00 00         [12] 1170 	ld	bc, #0x0
+                                   1171 ;main.c:148: if (joypad() & J_LEFT) move_x = -8;
+    00000514 CDr00r00         [24] 1172 	call	_joypad
+    00000517 CB 4F            [ 8] 1173 	bit	1, a
+    00000519 28 02            [12] 1174 	jr	Z, 00102$
+    0000051B 06 F8            [ 8] 1175 	ld	b, #0xf8
+    0000051D                       1176 00102$:
+                                   1177 ;main.c:149: if (joypad() & J_RIGHT) move_x = 8;
+    0000051D CDr00r00         [24] 1178 	call	_joypad
+    00000520 0F               [ 4] 1179 	rrca
+    00000521 30 02            [12] 1180 	jr	NC, 00104$
+    00000523 06 08            [ 8] 1181 	ld	b, #0x08
+    00000525                       1182 00104$:
+                                   1183 ;main.c:150: if (joypad() & J_UP) move_y = -8;
+    00000525 CDr00r00         [24] 1184 	call	_joypad
+    00000528 CB 57            [ 8] 1185 	bit	2, a
+    0000052A 28 02            [12] 1186 	jr	Z, 00106$
+    0000052C 0E F8            [ 8] 1187 	ld	c, #0xf8
+    0000052E                       1188 00106$:
+                                   1189 ;main.c:151: if (joypad() & J_DOWN) move_y = 8;
+    0000052E CDr00r00         [24] 1190 	call	_joypad
+    00000531 CB 5F            [ 8] 1191 	bit	3, a
+    00000533 28 02            [12] 1192 	jr	Z, 00108$
+    00000535 0E 08            [ 8] 1193 	ld	c, #0x08
+    00000537                       1194 00108$:
+                                   1195 ;main.c:153: hero_x += move_x;
+    00000537 21r25r01         [12] 1196 	ld	hl, #_hero_x
+    0000053A 7E               [ 8] 1197 	ld	a, (hl)
+    0000053B 80               [ 4] 1198 	add	a, b
+    0000053C 77               [ 8] 1199 	ld	(hl), a
+                                   1200 ;main.c:154: hero_y += move_y;
+    0000053D 21r26r01         [12] 1201 	ld	hl, #_hero_y
+    00000540 7E               [ 8] 1202 	ld	a, (hl)
+    00000541 81               [ 4] 1203 	add	a, c
+    00000542 77               [ 8] 1204 	ld	(hl), a
+                                   1205 ;main.c:156: if (hero_x > 152) hero_x = 154;
+    00000543 3E 98            [ 8] 1206 	ld	a, #0x98
+    00000545 21r25r01         [12] 1207 	ld	hl, #_hero_x
+    00000548 96               [ 8] 1208 	sub	a, (hl)
+    00000549 30 02            [12] 1209 	jr	NC, 00110$
+    0000054B 36 9A            [12] 1210 	ld	(hl), #0x9a
+    0000054D                       1211 00110$:
+                                   1212 ;main.c:157: if (hero_x < 10) hero_x = 8;
+    0000054D 21r25r01         [12] 1213 	ld	hl, #_hero_x
+    00000550 7E               [ 8] 1214 	ld	a, (hl)
+    00000551 D6 0A            [ 8] 1215 	sub	a, #0x0a
+    00000553 30 02            [12] 1216 	jr	NC, 00112$
+    00000555 36 08            [12] 1217 	ld	(hl), #0x08
+    00000557                       1218 00112$:
+                                   1219 ;main.c:158: if (hero_y > 144) hero_y = 144;
+    00000557 3E 90            [ 8] 1220 	ld	a, #0x90
+    00000559 21r26r01         [12] 1221 	ld	hl, #_hero_y
+    0000055C 96               [ 8] 1222 	sub	a, (hl)
+    0000055D 30 02            [12] 1223 	jr	NC, 00114$
+    0000055F 36 90            [12] 1224 	ld	(hl), #0x90
+    00000561                       1225 00114$:
+                                   1226 ;main.c:159: if (hero_y < 16) hero_y = 16;
+    00000561 21r26r01         [12] 1227 	ld	hl, #_hero_y
+    00000564 7E               [ 8] 1228 	ld	a, (hl)
+    00000565 D6 10            [ 8] 1229 	sub	a, #0x10
+    00000567 30 02            [12] 1230 	jr	NC, 00116$
+    00000569 36 10            [12] 1231 	ld	(hl), #0x10
+    0000056B                       1232 00116$:
+                                   1233 ;main.c:161: move_sprite(0, hero_x, hero_y);
+    0000056B 21r26r01         [12] 1234 	ld	hl, #_hero_y
+    0000056E 46               [ 8] 1235 	ld	b, (hl)
+    0000056F 21r25r01         [12] 1236 	ld	hl, #_hero_x
+    00000572 4E               [ 8] 1237 	ld	c, (hl)
+                                   1238 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
+    00000573 21r00r00         [12] 1239 	ld	hl, #_shadow_OAM
+                                   1240 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
+    00000576 78               [ 4] 1241 	ld	a, b
+    00000577 22               [ 8] 1242 	ld	(hl+), a
+    00000578 71               [ 8] 1243 	ld	(hl), c
+                                   1244 ;main.c:162: move_sprite(1, hero_x + 8, hero_y);
+    00000579 21r26r01         [12] 1245 	ld	hl, #_hero_y
+    0000057C 46               [ 8] 1246 	ld	b, (hl)
+    0000057D FAr25r01         [16] 1247 	ld	a, (#_hero_x)
+    00000580 C6 08            [ 8] 1248 	add	a, #0x08
+    00000582 4F               [ 4] 1249 	ld	c, a
+                                   1250 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
+    00000583 21r04r00         [12] 1251 	ld	hl, #(_shadow_OAM + 4)
+                                   1252 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
+    00000586 78               [ 4] 1253 	ld	a, b
+    00000587 22               [ 8] 1254 	ld	(hl+), a
+    00000588 71               [ 8] 1255 	ld	(hl), c
+                                   1256 ;main.c:163: move_sprite(2, hero_x, hero_y + 8);
+    00000589 FAr26r01         [16] 1257 	ld	a, (#_hero_y)
+    0000058C C6 08            [ 8] 1258 	add	a, #0x08
+    0000058E 47               [ 4] 1259 	ld	b, a
+    0000058F 21r25r01         [12] 1260 	ld	hl, #_hero_x
+    00000592 4E               [ 8] 1261 	ld	c, (hl)
+                                   1262 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
+    00000593 21r08r00         [12] 1263 	ld	hl, #(_shadow_OAM + 8)
+                                   1264 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
+    00000596 78               [ 4] 1265 	ld	a, b
+    00000597 22               [ 8] 1266 	ld	(hl+), a
+    00000598 71               [ 8] 1267 	ld	(hl), c
+                                   1268 ;main.c:164: move_sprite(3, hero_x + 8, hero_y + 8);
+    00000599 FAr26r01         [16] 1269 	ld	a, (#_hero_y)
+    0000059C C6 08            [ 8] 1270 	add	a, #0x08
+    0000059E 47               [ 4] 1271 	ld	b, a
+    0000059F FAr25r01         [16] 1272 	ld	a, (#_hero_x)
+    000005A2 C6 08            [ 8] 1273 	add	a, #0x08
+    000005A4 4F               [ 4] 1274 	ld	c, a
+                                   1275 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
+    000005A5 21r0Cr00         [12] 1276 	ld	hl, #(_shadow_OAM + 12)
+                                   1277 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
+    000005A8 78               [ 4] 1278 	ld	a, b
+    000005A9 22               [ 8] 1279 	ld	(hl+), a
+    000005AA 71               [ 8] 1280 	ld	(hl), c
+                                   1281 ;main.c:166: if (heroSpriteIndex == 0) {
+    000005AB FAr27r01         [16] 1282 	ld	a, (#_heroSpriteIndex)
+    000005AE B7               [ 4] 1283 	or	a, a
+    000005AF 20 1A            [12] 1284 	jr	NZ, 00118$
+                                   1285 ;c:\gbdk\include\gb\gb.h:1875: shadow_OAM[nb].tile=tile;
+    000005B1 21r02r00         [12] 1286 	ld	hl, #(_shadow_OAM + 2)
+    000005B4 36 00            [12] 1287 	ld	(hl), #0x00
+    000005B6 21r06r00         [12] 1288 	ld	hl, #(_shadow_OAM + 6)
+    000005B9 36 01            [12] 1289 	ld	(hl), #0x01
+    000005BB 21r0Ar00         [12] 1290 	ld	hl, #(_shadow_OAM + 10)
+    000005BE 36 02            [12] 1291 	ld	(hl), #0x02
+    000005C0 21r0Er00         [12] 1292 	ld	hl, #(_shadow_OAM + 14)
+    000005C3 36 03            [12] 1293 	ld	(hl), #0x03
+                                   1294 ;main.c:171: heroSpriteIndex = 1;
+    000005C5 21r27r01         [12] 1295 	ld	hl, #_heroSpriteIndex
+    000005C8 36 01            [12] 1296 	ld	(hl), #0x01
+    000005CA C9               [16] 1297 	ret
+    000005CB                       1298 00118$:
+                                   1299 ;c:\gbdk\include\gb\gb.h:1875: shadow_OAM[nb].tile=tile;
+    000005CB 21r02r00         [12] 1300 	ld	hl, #(_shadow_OAM + 2)
+    000005CE 36 04            [12] 1301 	ld	(hl), #0x04
+    000005D0 21r06r00         [12] 1302 	ld	hl, #(_shadow_OAM + 6)
+    000005D3 36 05            [12] 1303 	ld	(hl), #0x05
+    000005D5 21r0Ar00         [12] 1304 	ld	hl, #(_shadow_OAM + 10)
+    000005D8 36 06            [12] 1305 	ld	(hl), #0x06
+    000005DA 21r0Er00         [12] 1306 	ld	hl, #(_shadow_OAM + 14)
+    000005DD 36 07            [12] 1307 	ld	(hl), #0x07
+                                   1308 ;main.c:177: heroSpriteIndex = 0;
+    000005DF 21r27r01         [12] 1309 	ld	hl, #_heroSpriteIndex
+    000005E2 36 00            [12] 1310 	ld	(hl), #0x00
+                                   1311 ;main.c:179: }
+    000005E4 C9               [16] 1312 	ret
+                                   1313 ;main.c:181: void main(void) {
+                                   1314 ;	---------------------------------
+                                   1315 ; Function main
+                                   1316 ; ---------------------------------
+    000005E5                       1317 _main::
+                                   1318 ;main.c:182: set_sprite_data(0, 8, hero);
+    000005E5 11r00r00         [12] 1319 	ld	de, #_hero
+    000005E8 D5               [16] 1320 	push	de
+    000005E9 21 00 08         [12] 1321 	ld	hl, #0x800
+    000005EC E5               [16] 1322 	push	hl
+    000005ED CDr00r00         [24] 1323 	call	_set_sprite_data
+    000005F0 E8 04            [16] 1324 	add	sp, #4
+                                   1325 ;main.c:183: set_sprite_data(8, 8, enemy);
+    000005F2 11r80r00         [12] 1326 	ld	de, #_enemy
+    000005F5 D5               [16] 1327 	push	de
+    000005F6 21 08 08         [12] 1328 	ld	hl, #0x808
+    000005F9 E5               [16] 1329 	push	hl
+    000005FA CDr00r00         [24] 1330 	call	_set_sprite_data
+    000005FD E8 04            [16] 1331 	add	sp, #4
+                                   1332 ;main.c:184: set_sprite_data(16, 2, bullet);
+    000005FF 11r00r01         [12] 1333 	ld	de, #_bullet
+    00000602 D5               [16] 1334 	push	de
+    00000603 3E 02            [ 8] 1335 	ld	a, #0x02
+    00000605 F5               [16] 1336 	push	af
+    00000606 33               [ 8] 1337 	inc	sp
+    00000607 3E 10            [ 8] 1338 	ld	a, #0x10
+    00000609 F5               [16] 1339 	push	af
+    0000060A 33               [ 8] 1340 	inc	sp
+    0000060B CDr00r00         [24] 1341 	call	_set_sprite_data
+    0000060E E8 04            [16] 1342 	add	sp, #4
+                                   1343 ;main.c:186: initialize_bullets();
+    00000610 CDr00r00         [24] 1344 	call	_initialize_bullets
+                                   1345 ;c:\gbdk\include\gb\gb.h:1875: shadow_OAM[nb].tile=tile;
+    00000613 21r12r00         [12] 1346 	ld	hl, #(_shadow_OAM + 18)
+    00000616 36 08            [12] 1347 	ld	(hl), #0x08
+    00000618 21r16r00         [12] 1348 	ld	hl, #(_shadow_OAM + 22)
+    0000061B 36 09            [12] 1349 	ld	(hl), #0x09
+    0000061D 21r1Ar00         [12] 1350 	ld	hl, #(_shadow_OAM + 26)
+    00000620 36 0A            [12] 1351 	ld	(hl), #0x0a
+    00000622 21r1Er00         [12] 1352 	ld	hl, #(_shadow_OAM + 30)
+    00000625 36 0B            [12] 1353 	ld	(hl), #0x0b
+                                   1354 ;main.c:192: move_sprite(4, enemy_x, enemy_y);
+    00000627 21r21r01         [12] 1355 	ld	hl, #_enemy_y
+    0000062A 4E               [ 8] 1356 	ld	c, (hl)
+    0000062B 21r20r01         [12] 1357 	ld	hl, #_enemy_x
+    0000062E 46               [ 8] 1358 	ld	b, (hl)
+                                   1359 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
+    0000062F 21r10r00         [12] 1360 	ld	hl, #(_shadow_OAM + 16)
+                                   1361 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
+    00000632 79               [ 4] 1362 	ld	a, c
+    00000633 22               [ 8] 1363 	ld	(hl+), a
+    00000634 70               [ 8] 1364 	ld	(hl), b
+                                   1365 ;main.c:193: move_sprite(5, enemy_x + 8, enemy_y);
+    00000635 21r21r01         [12] 1366 	ld	hl, #_enemy_y
+    00000638 4E               [ 8] 1367 	ld	c, (hl)
+    00000639 FAr20r01         [16] 1368 	ld	a, (#_enemy_x)
+    0000063C C6 08            [ 8] 1369 	add	a, #0x08
+    0000063E 47               [ 4] 1370 	ld	b, a
+                                   1371 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
+    0000063F 21r14r00         [12] 1372 	ld	hl, #(_shadow_OAM + 20)
+                                   1373 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
+    00000642 79               [ 4] 1374 	ld	a, c
+    00000643 22               [ 8] 1375 	ld	(hl+), a
+    00000644 70               [ 8] 1376 	ld	(hl), b
+                                   1377 ;main.c:194: move_sprite(6, enemy_x, enemy_y + 8);
+    00000645 FAr21r01         [16] 1378 	ld	a, (#_enemy_y)
+    00000648 C6 08            [ 8] 1379 	add	a, #0x08
+    0000064A 4F               [ 4] 1380 	ld	c, a
+    0000064B 21r20r01         [12] 1381 	ld	hl, #_enemy_x
+    0000064E 46               [ 8] 1382 	ld	b, (hl)
+                                   1383 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
+    0000064F 21r18r00         [12] 1384 	ld	hl, #(_shadow_OAM + 24)
+                                   1385 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
+    00000652 79               [ 4] 1386 	ld	a, c
+    00000653 22               [ 8] 1387 	ld	(hl+), a
+    00000654 70               [ 8] 1388 	ld	(hl), b
+                                   1389 ;main.c:195: move_sprite(7, enemy_x + 8, enemy_y + 8);
+    00000655 FAr21r01         [16] 1390 	ld	a, (#_enemy_y)
+    00000658 C6 08            [ 8] 1391 	add	a, #0x08
+    0000065A 4F               [ 4] 1392 	ld	c, a
+    0000065B FAr20r01         [16] 1393 	ld	a, (#_enemy_x)
+    0000065E C6 08            [ 8] 1394 	add	a, #0x08
+    00000660 47               [ 4] 1395 	ld	b, a
+                                   1396 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
+    00000661 21r1Cr00         [12] 1397 	ld	hl, #(_shadow_OAM + 28)
+                                   1398 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
+    00000664 79               [ 4] 1399 	ld	a, c
+    00000665 22               [ 8] 1400 	ld	(hl+), a
+    00000666 70               [ 8] 1401 	ld	(hl), b
+                                   1402 ;main.c:197: move_sprite(0, hero_x, hero_y);
+    00000667 21r26r01         [12] 1403 	ld	hl, #_hero_y
+    0000066A 4E               [ 8] 1404 	ld	c, (hl)
+    0000066B 21r25r01         [12] 1405 	ld	hl, #_hero_x
+    0000066E 46               [ 8] 1406 	ld	b, (hl)
+                                   1407 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
+    0000066F 21r00r00         [12] 1408 	ld	hl, #_shadow_OAM
+                                   1409 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
+    00000672 79               [ 4] 1410 	ld	a, c
+    00000673 22               [ 8] 1411 	ld	(hl+), a
+    00000674 70               [ 8] 1412 	ld	(hl), b
+                                   1413 ;main.c:198: move_sprite(1, hero_x + 8, hero_y);
+    00000675 21r26r01         [12] 1414 	ld	hl, #_hero_y
+    00000678 4E               [ 8] 1415 	ld	c, (hl)
+    00000679 FAr25r01         [16] 1416 	ld	a, (#_hero_x)
+    0000067C C6 08            [ 8] 1417 	add	a, #0x08
+    0000067E 47               [ 4] 1418 	ld	b, a
+                                   1419 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
+    0000067F 21r04r00         [12] 1420 	ld	hl, #(_shadow_OAM + 4)
+                                   1421 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
+    00000682 79               [ 4] 1422 	ld	a, c
+    00000683 22               [ 8] 1423 	ld	(hl+), a
+    00000684 70               [ 8] 1424 	ld	(hl), b
+                                   1425 ;main.c:199: move_sprite(2, hero_x, hero_y + 8);
+    00000685 FAr26r01         [16] 1426 	ld	a, (#_hero_y)
+    00000688 C6 08            [ 8] 1427 	add	a, #0x08
+    0000068A 4F               [ 4] 1428 	ld	c, a
+    0000068B 21r25r01         [12] 1429 	ld	hl, #_hero_x
+    0000068E 46               [ 8] 1430 	ld	b, (hl)
+                                   1431 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
+    0000068F 21r08r00         [12] 1432 	ld	hl, #(_shadow_OAM + 8)
+                                   1433 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
+    00000692 79               [ 4] 1434 	ld	a, c
+    00000693 22               [ 8] 1435 	ld	(hl+), a
+    00000694 70               [ 8] 1436 	ld	(hl), b
+                                   1437 ;main.c:200: move_sprite(3, hero_x + 8, hero_y + 8);
+    00000695 FAr26r01         [16] 1438 	ld	a, (#_hero_y)
+    00000698 C6 08            [ 8] 1439 	add	a, #0x08
+    0000069A 4F               [ 4] 1440 	ld	c, a
+    0000069B FAr25r01         [16] 1441 	ld	a, (#_hero_x)
+    0000069E C6 08            [ 8] 1442 	add	a, #0x08
+    000006A0 47               [ 4] 1443 	ld	b, a
+                                   1444 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
+    000006A1 21r0Cr00         [12] 1445 	ld	hl, #(_shadow_OAM + 12)
+                                   1446 ;c:\gbdk\include\gb\gb.h:1962: itm->y=y, itm->x=x;
+    000006A4 79               [ 4] 1447 	ld	a, c
+    000006A5 22               [ 8] 1448 	ld	(hl+), a
+    000006A6 70               [ 8] 1449 	ld	(hl), b
+                                   1450 ;main.c:202: SHOW_SPRITES;
+    000006A7 F0r00            [12] 1451 	ldh	a, (_LCDC_REG + 0)
+    000006A9 F6 02            [ 8] 1452 	or	a, #0x02
+    000006AB E0r00            [12] 1453 	ldh	(_LCDC_REG + 0), a
+                                   1454 ;main.c:204: while(1) {
+    000006AD                       1455 00104$:
+                                   1456 ;main.c:205: update_enemy_sprite();
+    000006AD CDr0Cr04         [24] 1457 	call	_update_enemy_sprite
+                                   1458 ;main.c:206: update_hero_sprite();
+    000006B0 CDr11r05         [24] 1459 	call	_update_hero_sprite
+                                   1460 ;main.c:208: if (joypad() & J_A) fire_bullets();
+    000006B3 CDr00r00         [24] 1461 	call	_joypad
+    000006B6 CB 67            [ 8] 1462 	bit	4, a
+    000006B8 28 03            [12] 1463 	jr	Z, 00102$
+    000006BA CDr38r00         [24] 1464 	call	_fire_bullets
+    000006BD                       1465 00102$:
+                                   1466 ;main.c:209: update_bullets();
+    000006BD CDr32r02         [24] 1467 	call	_update_bullets
+                                   1468 ;main.c:211: delay(100);
+    000006C0 11 64 00         [12] 1469 	ld	de, #0x0064
+    000006C3 CDr00r00         [24] 1470 	call	_delay
+                                   1471 ;main.c:213: }
+    000006C6 18 E5            [12] 1472 	jr	00104$
+                                   1473 	.area _CODE
+                                   1474 	.area _INITIALIZER
+    00000000                       1475 __xinit__hero:
+    00000000 08                    1476 	.db #0x08	; 8
+    00000001 08                    1477 	.db #0x08	; 8
+    00000002 0C                    1478 	.db #0x0c	; 12
+    00000003 0C                    1479 	.db #0x0c	; 12
+    00000004 0B                    1480 	.db #0x0b	; 11
+    00000005 0F                    1481 	.db #0x0f	; 15
+    00000006 08                    1482 	.db #0x08	; 8
+    00000007 0F                    1483 	.db #0x0f	; 15
+    00000008 16                    1484 	.db #0x16	; 22
+    00000009 1F                    1485 	.db #0x1f	; 31
+    0000000A 14                    1486 	.db #0x14	; 20
+    0000000B 1F                    1487 	.db #0x1f	; 31
+    0000000C 16                    1488 	.db #0x16	; 22
+    0000000D 1F                    1489 	.db #0x1f	; 31
+    0000000E 10                    1490 	.db #0x10	; 16
+    0000000F 10                    1491 	.db #0x10	; 16
+    00000010 08                    1492 	.db #0x08	; 8
+    00000011 08                    1493 	.db #0x08	; 8
+    00000012 18                    1494 	.db #0x18	; 24
+    00000013 18                    1495 	.db #0x18	; 24
+    00000014 E8                    1496 	.db #0xe8	; 232
+    00000015 F8                    1497 	.db #0xf8	; 248
+    00000016 08                    1498 	.db #0x08	; 8
+    00000017 F8                    1499 	.db #0xf8	; 248
+    00000018 34                    1500 	.db #0x34	; 52	'4'
+    00000019 FC                    1501 	.db #0xfc	; 252
+    0000001A 24                    1502 	.db #0x24	; 36
+    0000001B FC                    1503 	.db #0xfc	; 252
+    0000001C B4                    1504 	.db #0xb4	; 180
+    0000001D FC                    1505 	.db #0xfc	; 252
+    0000001E 04                    1506 	.db #0x04	; 4
+    0000001F 04                    1507 	.db #0x04	; 4
+    00000020 1E                    1508 	.db #0x1e	; 30
+    00000021 1E                    1509 	.db #0x1e	; 30
+    00000022 D7                    1510 	.db #0xd7	; 215
+    00000023 D7                    1511 	.db #0xd7	; 215
+    00000024 AE                    1512 	.db #0xae	; 174
+    00000025 BE                    1513 	.db #0xbe	; 190
+    00000026 92                    1514 	.db #0x92	; 146
+    00000027 BE                    1515 	.db #0xbe	; 190
+    00000028 92                    1516 	.db #0x92	; 146
+    00000029 BE                    1517 	.db #0xbe	; 190
+    0000002A 4F                    1518 	.db #0x4f	; 79	'O'
+    0000002B 7F                    1519 	.db #0x7f	; 127
+    0000002C 29                    1520 	.db #0x29	; 41
+    0000002D 3F                    1521 	.db #0x3f	; 63
+    0000002E 1F                    1522 	.db #0x1f	; 31
+    0000002F 1F                    1523 	.db #0x1f	; 31
+    00000030 BC                    1524 	.db #0xbc	; 188
+    00000031 BC                    1525 	.db #0xbc	; 188
+    00000032 70                    1526 	.db #0x70	; 112	'p'
+    00000033 70                    1527 	.db #0x70	; 112	'p'
+    00000034 38                    1528 	.db #0x38	; 56	'8'
+    00000035 38                    1529 	.db #0x38	; 56	'8'
+    00000036 24                    1530 	.db #0x24	; 36
+    00000037 3C                    1531 	.db #0x3c	; 60
+    00000038 24                    1532 	.db #0x24	; 36
+    00000039 3C                    1533 	.db #0x3c	; 60
+    0000003A 78                    1534 	.db #0x78	; 120	'x'
+    0000003B 78                    1535 	.db #0x78	; 120	'x'
+    0000003C C8                    1536 	.db #0xc8	; 200
+    0000003D F8                    1537 	.db #0xf8	; 248
+    0000003E F8                    1538 	.db #0xf8	; 248
+    0000003F F8                    1539 	.db #0xf8	; 248
+    00000040                       1540 __xinit__hero2:
+    00000040 08                    1541 	.db #0x08	; 8
+    00000041 08                    1542 	.db #0x08	; 8
+    00000042 0C                    1543 	.db #0x0c	; 12
+    00000043 0C                    1544 	.db #0x0c	; 12
+    00000044 0B                    1545 	.db #0x0b	; 11
+    00000045 0F                    1546 	.db #0x0f	; 15
+    00000046 08                    1547 	.db #0x08	; 8
+    00000047 0F                    1548 	.db #0x0f	; 15
+    00000048 16                    1549 	.db #0x16	; 22
+    00000049 1F                    1550 	.db #0x1f	; 31
+    0000004A 14                    1551 	.db #0x14	; 20
+    0000004B 1F                    1552 	.db #0x1f	; 31
+    0000004C 16                    1553 	.db #0x16	; 22
+    0000004D 1F                    1554 	.db #0x1f	; 31
+    0000004E 10                    1555 	.db #0x10	; 16
+    0000004F 10                    1556 	.db #0x10	; 16
+    00000050 08                    1557 	.db #0x08	; 8
+    00000051 08                    1558 	.db #0x08	; 8
+    00000052 18                    1559 	.db #0x18	; 24
+    00000053 18                    1560 	.db #0x18	; 24
+    00000054 E8                    1561 	.db #0xe8	; 232
+    00000055 F8                    1562 	.db #0xf8	; 248
+    00000056 08                    1563 	.db #0x08	; 8
+    00000057 F8                    1564 	.db #0xf8	; 248
+    00000058 34                    1565 	.db #0x34	; 52	'4'
+    00000059 FC                    1566 	.db #0xfc	; 252
+    0000005A 24                    1567 	.db #0x24	; 36
+    0000005B FC                    1568 	.db #0xfc	; 252
+    0000005C B4                    1569 	.db #0xb4	; 180
+    0000005D FC                    1570 	.db #0xfc	; 252
+    0000005E 04                    1571 	.db #0x04	; 4
+    0000005F 04                    1572 	.db #0x04	; 4
+    00000060 1E                    1573 	.db #0x1e	; 30
+    00000061 1E                    1574 	.db #0x1e	; 30
+    00000062 2F                    1575 	.db #0x2f	; 47
+    00000063 2F                    1576 	.db #0x2f	; 47
+    00000064 4E                    1577 	.db #0x4e	; 78	'N'
+    00000065 4E                    1578 	.db #0x4e	; 78	'N'
+    00000066 52                    1579 	.db #0x52	; 82	'R'
+    00000067 7E                    1580 	.db #0x7e	; 126
+    00000068 52                    1581 	.db #0x52	; 82	'R'
+    00000069 7E                    1582 	.db #0x7e	; 126
+    0000006A 4F                    1583 	.db #0x4f	; 79	'O'
+    0000006B 7F                    1584 	.db #0x7f	; 127
+    0000006C 29                    1585 	.db #0x29	; 41
+    0000006D 3F                    1586 	.db #0x3f	; 63
+    0000006E 1F                    1587 	.db #0x1f	; 31
+    0000006F 1F                    1588 	.db #0x1f	; 31
+    00000070 BC                    1589 	.db #0xbc	; 188
+    00000071 BC                    1590 	.db #0xbc	; 188
+    00000072 70                    1591 	.db #0x70	; 112	'p'
+    00000073 70                    1592 	.db #0x70	; 112	'p'
+    00000074 38                    1593 	.db #0x38	; 56	'8'
+    00000075 38                    1594 	.db #0x38	; 56	'8'
+    00000076 24                    1595 	.db #0x24	; 36
+    00000077 3C                    1596 	.db #0x3c	; 60
+    00000078 24                    1597 	.db #0x24	; 36
+    00000079 3C                    1598 	.db #0x3c	; 60
+    0000007A 78                    1599 	.db #0x78	; 120	'x'
+    0000007B 78                    1600 	.db #0x78	; 120	'x'
+    0000007C C8                    1601 	.db #0xc8	; 200
+    0000007D F8                    1602 	.db #0xf8	; 248
+    0000007E F8                    1603 	.db #0xf8	; 248
+    0000007F F8                    1604 	.db #0xf8	; 248
+    00000080                       1605 __xinit__enemy:
+    00000080 1E                    1606 	.db #0x1e	; 30
+    00000081 1E                    1607 	.db #0x1e	; 30
+    00000082 7F                    1608 	.db #0x7f	; 127
+    00000083 7F                    1609 	.db #0x7f	; 127
+    00000084 FF                    1610 	.db #0xff	; 255
+    00000085 FF                    1611 	.db #0xff	; 255
+    00000086 CF                    1612 	.db #0xcf	; 207
+    00000087 FF                    1613 	.db #0xff	; 255
+    00000088 CC                    1614 	.db #0xcc	; 204
+    00000089 FF                    1615 	.db #0xff	; 255
+    0000008A FF                    1616 	.db #0xff	; 255
+    0000008B FF                    1617 	.db #0xff	; 255
+    0000008C F3                    1618 	.db #0xf3	; 243
+    0000008D FF                    1619 	.db #0xff	; 255
+    0000008E F3                    1620 	.db #0xf3	; 243
+    0000008F FF                    1621 	.db #0xff	; 255
+    00000090 00                    1622 	.db #0x00	; 0
+    00000091 00                    1623 	.db #0x00	; 0
+    00000092 80                    1624 	.db #0x80	; 128
+    00000093 80                    1625 	.db #0x80	; 128
+    00000094 C0                    1626 	.db #0xc0	; 192
+    00000095 C0                    1627 	.db #0xc0	; 192
+    00000096 C0                    1628 	.db #0xc0	; 192
+    00000097 C0                    1629 	.db #0xc0	; 192
+    00000098 C0                    1630 	.db #0xc0	; 192
+    00000099 C0                    1631 	.db #0xc0	; 192
+    0000009A C0                    1632 	.db #0xc0	; 192
+    0000009B C0                    1633 	.db #0xc0	; 192
+    0000009C C0                    1634 	.db #0xc0	; 192
+    0000009D C0                    1635 	.db #0xc0	; 192
+    0000009E C0                    1636 	.db #0xc0	; 192
+    0000009F C0                    1637 	.db #0xc0	; 192
+    000000A0 7F                    1638 	.db #0x7f	; 127
+    000000A1 7F                    1639 	.db #0x7f	; 127
+    000000A2 7F                    1640 	.db #0x7f	; 127
+    000000A3 7F                    1641 	.db #0x7f	; 127
+    000000A4 9F                    1642 	.db #0x9f	; 159
+    000000A5 9F                    1643 	.db #0x9f	; 159
+    000000A6 9E                    1644 	.db #0x9e	; 158
+    000000A7 9E                    1645 	.db #0x9e	; 158
+    000000A8 7E                    1646 	.db #0x7e	; 126
+    000000A9 7E                    1647 	.db #0x7e	; 126
+    000000AA 1F                    1648 	.db #0x1f	; 31
+    000000AB 1F                    1649 	.db #0x1f	; 31
+    000000AC 12                    1650 	.db #0x12	; 18
+    000000AD 12                    1651 	.db #0x12	; 18
+    000000AE 12                    1652 	.db #0x12	; 18
+    000000AF 12                    1653 	.db #0x12	; 18
+    000000B0 80                    1654 	.db #0x80	; 128
+    000000B1 80                    1655 	.db #0x80	; 128
+    000000B2 00                    1656 	.db #0x00	; 0
+    000000B3 00                    1657 	.db #0x00	; 0
+    000000B4 C0                    1658 	.db #0xc0	; 192
+    000000B5 C0                    1659 	.db #0xc0	; 192
+    000000B6 40                    1660 	.db #0x40	; 64
+    000000B7 40                    1661 	.db #0x40	; 64
+    000000B8 40                    1662 	.db #0x40	; 64
+    000000B9 40                    1663 	.db #0x40	; 64
+    000000BA 80                    1664 	.db #0x80	; 128
+    000000BB 80                    1665 	.db #0x80	; 128
+    000000BC 00                    1666 	.db #0x00	; 0
+    000000BD 00                    1667 	.db #0x00	; 0
+    000000BE 00                    1668 	.db #0x00	; 0
+    000000BF 00                    1669 	.db #0x00	; 0
+    000000C0                       1670 __xinit__enemy2:
+    000000C0 1E                    1671 	.db #0x1e	; 30
+    000000C1 1E                    1672 	.db #0x1e	; 30
+    000000C2 7F                    1673 	.db #0x7f	; 127
+    000000C3 7F                    1674 	.db #0x7f	; 127
+    000000C4 C9                    1675 	.db #0xc9	; 201
+    000000C5 C9                    1676 	.db #0xc9	; 201
+    000000C6 88                    1677 	.db #0x88	; 136
+    000000C7 88                    1678 	.db #0x88	; 136
+    000000C8 C8                    1679 	.db #0xc8	; 200
+    000000C9 C8                    1680 	.db #0xc8	; 200
+    000000CA FF                    1681 	.db #0xff	; 255
+    000000CB FF                    1682 	.db #0xff	; 255
+    000000CC C0                    1683 	.db #0xc0	; 192
+    000000CD C0                    1684 	.db #0xc0	; 192
+    000000CE E1                    1685 	.db #0xe1	; 225
+    000000CF E1                    1686 	.db #0xe1	; 225
+    000000D0 00                    1687 	.db #0x00	; 0
+    000000D1 00                    1688 	.db #0x00	; 0
+    000000D2 80                    1689 	.db #0x80	; 128
+    000000D3 80                    1690 	.db #0x80	; 128
+    000000D4 C0                    1691 	.db #0xc0	; 192
+    000000D5 C0                    1692 	.db #0xc0	; 192
+    000000D6 C0                    1693 	.db #0xc0	; 192
+    000000D7 C0                    1694 	.db #0xc0	; 192
+    000000D8 C0                    1695 	.db #0xc0	; 192
+    000000D9 C0                    1696 	.db #0xc0	; 192
+    000000DA C0                    1697 	.db #0xc0	; 192
+    000000DB C0                    1698 	.db #0xc0	; 192
+    000000DC C0                    1699 	.db #0xc0	; 192
+    000000DD C0                    1700 	.db #0xc0	; 192
+    000000DE C0                    1701 	.db #0xc0	; 192
+    000000DF C0                    1702 	.db #0xc0	; 192
+    000000E0 7F                    1703 	.db #0x7f	; 127
+    000000E1 7F                    1704 	.db #0x7f	; 127
+    000000E2 7F                    1705 	.db #0x7f	; 127
+    000000E3 7F                    1706 	.db #0x7f	; 127
+    000000E4 9F                    1707 	.db #0x9f	; 159
+    000000E5 9F                    1708 	.db #0x9f	; 159
+    000000E6 9E                    1709 	.db #0x9e	; 158
+    000000E7 9E                    1710 	.db #0x9e	; 158
+    000000E8 7E                    1711 	.db #0x7e	; 126
+    000000E9 7E                    1712 	.db #0x7e	; 126
+    000000EA 1F                    1713 	.db #0x1f	; 31
+    000000EB 1F                    1714 	.db #0x1f	; 31
+    000000EC 12                    1715 	.db #0x12	; 18
+    000000ED 12                    1716 	.db #0x12	; 18
+    000000EE 12                    1717 	.db #0x12	; 18
+    000000EF 12                    1718 	.db #0x12	; 18
+    000000F0 80                    1719 	.db #0x80	; 128
+    000000F1 80                    1720 	.db #0x80	; 128
+    000000F2 00                    1721 	.db #0x00	; 0
+    000000F3 00                    1722 	.db #0x00	; 0
+    000000F4 C0                    1723 	.db #0xc0	; 192
+    000000F5 C0                    1724 	.db #0xc0	; 192
+    000000F6 40                    1725 	.db #0x40	; 64
+    000000F7 40                    1726 	.db #0x40	; 64
+    000000F8 40                    1727 	.db #0x40	; 64
+    000000F9 40                    1728 	.db #0x40	; 64
+    000000FA 80                    1729 	.db #0x80	; 128
+    000000FB 80                    1730 	.db #0x80	; 128
+    000000FC 00                    1731 	.db #0x00	; 0
+    000000FD 00                    1732 	.db #0x00	; 0
+    000000FE 00                    1733 	.db #0x00	; 0
+    000000FF 00                    1734 	.db #0x00	; 0
+    00000100                       1735 __xinit__bullet:
+    00000100 00                    1736 	.db #0x00	; 0
+    00000101 00                    1737 	.db #0x00	; 0
+    00000102 00                    1738 	.db #0x00	; 0
+    00000103 00                    1739 	.db #0x00	; 0
+    00000104 00                    1740 	.db #0x00	; 0
+    00000105 00                    1741 	.db #0x00	; 0
+    00000106 18                    1742 	.db #0x18	; 24
+    00000107 18                    1743 	.db #0x18	; 24
+    00000108 10                    1744 	.db #0x10	; 16
+    00000109 10                    1745 	.db #0x10	; 16
+    0000010A 00                    1746 	.db #0x00	; 0
+    0000010B 00                    1747 	.db #0x00	; 0
+    0000010C 00                    1748 	.db #0x00	; 0
+    0000010D 00                    1749 	.db #0x00	; 0
+    0000010E 00                    1750 	.db #0x00	; 0
+    0000010F 00                    1751 	.db #0x00	; 0
+    00000110                       1752 __xinit__bullet2:
+    00000110 00                    1753 	.db #0x00	; 0
+    00000111 00                    1754 	.db #0x00	; 0
+    00000112 00                    1755 	.db #0x00	; 0
+    00000113 00                    1756 	.db #0x00	; 0
+    00000114 00                    1757 	.db #0x00	; 0
+    00000115 00                    1758 	.db #0x00	; 0
+    00000116 18                    1759 	.db #0x18	; 24
+    00000117 18                    1760 	.db #0x18	; 24
+    00000118 08                    1761 	.db #0x08	; 8
+    00000119 08                    1762 	.db #0x08	; 8
+    0000011A 00                    1763 	.db #0x00	; 0
+    0000011B 00                    1764 	.db #0x00	; 0
+    0000011C 00                    1765 	.db #0x00	; 0
+    0000011D 00                    1766 	.db #0x00	; 0
+    0000011E 00                    1767 	.db #0x00	; 0
+    0000011F 00                    1768 	.db #0x00	; 0
+    00000120                       1769 __xinit__enemy_x:
+    00000120 78                    1770 	.db #0x78	; 120	'x'
+    00000121                       1771 __xinit__enemy_y:
+    00000121 4E                    1772 	.db #0x4e	; 78	'N'
+    00000122                       1773 __xinit__enemySpriteIndex:
+    00000122 00                    1774 	.db #0x00	; 0
+    00000123                       1775 __xinit__enemySpeed:
+    00000123 01                    1776 	.db #0x01	; 1
+    00000124                       1777 __xinit__enemyAnimationCounter:
+    00000124 00                    1778 	.db #0x00	; 0
+    00000125                       1779 __xinit__hero_x:
+    00000125 0A                    1780 	.db #0x0a	; 10
+    00000126                       1781 __xinit__hero_y:
+    00000126 0A                    1782 	.db #0x0a	; 10
+    00000127                       1783 __xinit__heroSpriteIndex:
+    00000127 00                    1784 	.db #0x00	; 0
+                                   1785 	.area _CABS (ABS)
