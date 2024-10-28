@@ -12,63 +12,75 @@ Symbol Table
     _STAT_REG                                                       ******** GX
     _WX_REG                                                         ******** GX
     _WY_REG                                                         ******** GX
+  0 ___str_0                                                        00000688 R
     __muluschar                                                     ******** GX
-  7 __xinit__bullet                                                 00000105 R
-  7 __xinit__bullet2                                                00000115 R
-  7 __xinit__display_win                                            0000012D R
-  7 __xinit__enemy                                                  00000085 R
-  7 __xinit__enemy2                                                 000000C5 R
-  7 __xinit__enemyAnimationCounter                                  00000129 R
-  7 __xinit__enemySpeed                                             00000128 R
-  7 __xinit__enemySpriteIndex                                       00000127 R
-  7 __xinit__enemy_x                                                00000125 R
-  7 __xinit__enemy_y                                                00000126 R
-  7 __xinit__hero                                                   00000005 R
-  7 __xinit__hero2                                                  00000045 R
-  7 __xinit__heroSpriteIndex                                        0000012C R
-  7 __xinit__hero_x                                                 0000012A R
-  7 __xinit__hero_y                                                 0000012B R
-  7 __xinit__windowmap                                              00000000 R
+  7 __xinit__bullet                                                 00000111 R
+  7 __xinit__bullet2                                                00000121 R
+  7 __xinit__display_win                                            0000013A R
+  7 __xinit__enemy                                                  00000091 R
+  7 __xinit__enemy2                                                 000000D1 R
+  7 __xinit__enemyAnimationCounter                                  00000135 R
+  7 __xinit__enemySpeed                                             00000134 R
+  7 __xinit__enemySpriteIndex                                       00000133 R
+  7 __xinit__enemy_x                                                00000131 R
+  7 __xinit__enemy_y                                                00000132 R
+  7 __xinit__hero                                                   00000011 R
+  7 __xinit__hero2                                                  00000051 R
+  7 __xinit__heroHealth                                             00000139 R
+  7 __xinit__heroSpriteIndex                                        00000138 R
+  7 __xinit__hero_x                                                 00000136 R
+  7 __xinit__hero_y                                                 00000137 R
+  7 __xinit__windowHeroMetric100                                    00000000 R
+  7 __xinit__windowHeroMetric25                                     0000000D R
+  7 __xinit__windowHeroMetric50                                     00000009 R
+  7 __xinit__windowHeroMetric75                                     00000005 R
     _add_LCD                                                        ******** GX
-  2 _bullet                                                         00000105 GR
-  2 _bullet2                                                        00000115 GR
+  2 _bullet                                                         00000111 GR
+  2 _bullet2                                                        00000121 GR
   1 _bullets                                                        00000000 GR
     _delay                                                          ******** GX
-  2 _display_win                                                    0000012D GR
-  2 _enemy                                                          00000085 GR
-  2 _enemy2                                                         000000C5 GR
-  2 _enemyAnimationCounter                                          00000129 GR
-  2 _enemySpeed                                                     00000128 GR
-  2 _enemySpriteIndex                                               00000127 GR
-  2 _enemy_x                                                        00000125 GR
-  2 _enemy_y                                                        00000126 GR
+  2 _display_win                                                    0000013A GR
+  2 _enemy                                                          00000091 GR
+  2 _enemy2                                                         000000D1 GR
+  2 _enemyAnimationCounter                                          00000135 GR
+  2 _enemySpeed                                                     00000134 GR
+  2 _enemySpriteIndex                                               00000133 GR
+  2 _enemy_x                                                        00000131 GR
+  2 _enemy_y                                                        00000132 GR
   0 _fire_bullets                                                   0000004B GR
     _font_init                                                      ******** GX
     _font_load                                                      ******** GX
     _font_min                                                       ******** GX
     _font_set                                                       ******** GX
-  2 _hero                                                           00000005 GR
-  2 _hero2                                                          00000045 GR
-  2 _heroSpriteIndex                                                0000012C GR
-  2 _hero_x                                                         0000012A GR
-  2 _hero_y                                                         0000012B GR
-  0 _initialize_bullets                                             0000000C GR
-  0 _interruptLCD                                                   00000000 GR
-    _joypad                                                         ******** GX
-  0 _main                                                           0000062C GR
-    _set_interrupts                                                 ******** GX
-    _set_sprite_data                                                ******** GX
+  0 _handle_hero_collision                                          000005AF GR
+  2 _hero                                                           00000011 GR
+  2 _hero2                                                          00000051 GR
+  2 _heroHealth                                                     00000139 GR
+  2 _heroSpriteIndex                                                00000138 GR
+  2 _hero_x                                                         00000136 GR
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (GameBoy)                  Page 2
 Hexadecimal [32-Bits]
 
 Symbol Table
 
+  2 _hero_y                                                         00000137 GR
+  0 _initialize_bullets                                             0000000C GR
+  0 _interruptLCD                                                   00000000 GR
+    _joypad                                                         ******** GX
+  0 _main                                                           0000073B GR
+    _printf                                                         ******** GX
+    _set_interrupts                                                 ******** GX
+    _set_sprite_data                                                ******** GX
     _set_win_tiles                                                  ******** GX
     _shadow_OAM                                                     ******** GX
   0 _update_bullets                                                 0000025B GR
   0 _update_enemy_sprite                                            00000453 GR
-  0 _update_hero_sprite                                             00000558 GR
-  2 _windowmap                                                      00000000 GR
+  0 _update_health_display                                          00000535 GR
+  0 _update_hero_sprite                                             00000692 GR
+  2 _windowHeroMetric100                                            00000000 GR
+  2 _windowHeroMetric25                                             0000000D GR
+  2 _windowHeroMetric50                                             00000009 GR
+  2 _windowHeroMetric75                                             00000005 GR
 
 
 ASxxxx Assembler V02.00 + NoICE + SDCC mods  (GameBoy)                  Page 3
@@ -76,13 +88,13 @@ Hexadecimal [32-Bits]
 
 Area Table
 
-   0 _CODE                                      size      758   flags    0
+   0 _CODE                                      size      86A   flags    0
    1 _DATA                                      size       46   flags    0
-   2 _INITIALIZED                               size      12E   flags    0
+   2 _INITIALIZED                               size      13B   flags    0
    3 _DABS                                      size        0   flags    8
    4 _HOME                                      size        0   flags    0
    5 _GSINIT                                    size        0   flags    0
    6 _GSFINAL                                   size        0   flags    0
-   7 _INITIALIZER                               size      12E   flags    0
+   7 _INITIALIZER                               size      13B   flags    0
    8 _CABS                                      size        0   flags    8
 
