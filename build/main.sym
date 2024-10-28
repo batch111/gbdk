@@ -1,0 +1,59 @@
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (GameBoy)                  Page 1
+Hexadecimal [32-Bits]
+
+Symbol Table
+
+    .__.$$$.                                                    =   00002710 L
+    .__.ABS.                                                    =   00000000 G
+    .__.CPU.                                                    =   00000000 L
+    .__.H$L.                                                    =   00000000 L
+    _LCDC_REG                                                       ******** GX
+    __muluschar                                                     ******** GX
+  7 __xinit__enemy                                                  00000080 R
+  7 __xinit__enemy2                                                 000000C0 R
+  7 __xinit__enemyAnimationCounter                                  00000104 R
+  7 __xinit__enemySpeed                                             00000103 R
+  7 __xinit__enemySpriteIndex                                       00000102 R
+  7 __xinit__enemy_x                                                00000100 R
+  7 __xinit__enemy_y                                                00000101 R
+  7 __xinit__hero                                                   00000000 R
+  7 __xinit__hero2                                                  00000040 R
+  7 __xinit__heroSpriteIndex                                        00000107 R
+  7 __xinit__hero_x                                                 00000105 R
+  7 __xinit__hero_y                                                 00000106 R
+    _delay                                                          ******** GX
+  2 _enemy                                                          00000080 GR
+  2 _enemy2                                                         000000C0 GR
+  2 _enemyAnimationCounter                                          00000104 GR
+  2 _enemySpeed                                                     00000103 GR
+  2 _enemySpriteIndex                                               00000102 GR
+  2 _enemy_x                                                        00000100 GR
+  2 _enemy_y                                                        00000101 GR
+  2 _hero                                                           00000000 GR
+  2 _hero2                                                          00000040 GR
+  2 _heroSpriteIndex                                                00000107 GR
+  2 _hero_x                                                         00000105 GR
+  2 _hero_y                                                         00000106 GR
+    _joypad                                                         ******** GX
+  0 _main                                                           000001E1 GR
+    _set_sprite_data                                                ******** GX
+    _shadow_OAM                                                     ******** GX
+  0 _update_enemy_sprite                                            00000000 GR
+  0 _update_hero_sprite                                             0000010D GR
+
+
+ASxxxx Assembler V02.00 + NoICE + SDCC mods  (GameBoy)                  Page 2
+Hexadecimal [32-Bits]
+
+Area Table
+
+   0 _CODE                                      size      2A7   flags    0
+   1 _DATA                                      size        0   flags    0
+   2 _INITIALIZED                               size      108   flags    0
+   3 _DABS                                      size        0   flags    8
+   4 _HOME                                      size        0   flags    0
+   5 _GSINIT                                    size        0   flags    0
+   6 _GSFINAL                                   size        0   flags    0
+   7 _INITIALIZER                               size      108   flags    0
+   8 _CABS                                      size        0   flags    8
+
