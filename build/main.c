@@ -1,6 +1,8 @@
 #include <gb/gb.h>
 #include <stdio.h>
 #include <rand.h>
+#include <gbdk/font.h>
+#include "C:\gameboyGame\application\assets\sprites\windowmap.c"
 #include "C:\gameboyGame\application\assets\sprites\hero.c"
 #include "C:\gameboyGame\application\assets\sprites\hero2.c"
 #include "C:\gameboyGame\application\assets\sprites\enemy.c"
@@ -19,6 +21,16 @@ UINT8 enemyAnimationCounter = 0;
 UINT8 hero_x = 10;
 UINT8 hero_y = 10;
 UINT8 heroSpriteIndex = 0;
+
+// Variable pour gérer l'état de l'affichage de la fenêtre
+UINT8 display_win = 1; // 1 pour afficher, 0 pour ne pas afficher
+
+void interruptLCD() {
+    // Routine d'interruption pour mettre à jour l'affichage de la fenêtre
+    if (display_win) {
+        SHOW_WIN; // Afficher la fenêtre
+    }
+}
 
 // Structure pour gérer les boules d'énergie
 struct Bullet {
@@ -185,6 +197,22 @@ void update_hero_sprite() {
 }
 
 void main(void) {
+    font_t min_font;
+    STAT_REG = 0x45;
+    LYC_REG = 0x08;  //  Fire LCD Interupt on the 8th scan line (just first row)
+    disable_interrupts();
+    font_init();
+    min_font = font_load(font_min); // 36 tile
+    font_set(min_font);
+    set_win_tiles(0,0,5,1,windowmap);
+    move_win(7,130);
+    SHOW_WIN;
+    DISPLAY_ON;
+
+    add_LCD(interruptLCD);
+    enable_interrupts();
+    set_interrupts(VBL_IFLAG | LCD_IFLAG);   
+
     set_sprite_data(0, 8, hero);
     set_sprite_data(8, 8, enemy);
     set_sprite_data(16, 2, bullet);
@@ -210,10 +238,8 @@ void main(void) {
     while(1) {
         update_enemy_sprite();
         update_hero_sprite();
-
         if (joypad() & J_A) fire_bullets();
         update_bullets();
-
         delay(100);
     }
 }

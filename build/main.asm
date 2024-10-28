@@ -14,9 +14,17 @@
 	.globl _update_bullets
 	.globl _fire_bullets
 	.globl _initialize_bullets
+	.globl _interruptLCD
+	.globl _font_set
+	.globl _font_load
+	.globl _font_init
 	.globl _set_sprite_data
+	.globl _set_win_tiles
+	.globl _set_interrupts
 	.globl _joypad
 	.globl _delay
+	.globl _add_LCD
+	.globl _display_win
 	.globl _heroSpriteIndex
 	.globl _hero_y
 	.globl _hero_x
@@ -31,6 +39,7 @@
 	.globl _enemy
 	.globl _hero2
 	.globl _hero
+	.globl _windowmap
 	.globl _bullets
 ;--------------------------------------------------------
 ; special function registers
@@ -45,6 +54,8 @@ _bullets::
 ; ram data
 ;--------------------------------------------------------
 	.area _INITIALIZED
+_windowmap::
+	.ds 5
 _hero::
 	.ds 64
 _hero2::
@@ -73,6 +84,8 @@ _hero_y::
 	.ds 1
 _heroSpriteIndex::
 	.ds 1
+_display_win::
+	.ds 1
 ;--------------------------------------------------------
 ; absolute external ram data
 ;--------------------------------------------------------
@@ -93,18 +106,33 @@ _heroSpriteIndex::
 ; code
 ;--------------------------------------------------------
 	.area _CODE
-;main.c:37: void initialize_bullets() {
+;main.c:28: void interruptLCD() {
+;	---------------------------------
+; Function interruptLCD
+; ---------------------------------
+_interruptLCD::
+;main.c:30: if (display_win) {
+	ld	a, (#_display_win)
+	or	a, a
+	ret	Z
+;main.c:31: SHOW_WIN; // Afficher la fenêtre
+	ldh	a, (_LCDC_REG + 0)
+	or	a, #0x20
+	ldh	(_LCDC_REG + 0), a
+;main.c:33: }
+	ret
+;main.c:49: void initialize_bullets() {
 ;	---------------------------------
 ; Function initialize_bullets
 ; ---------------------------------
 _initialize_bullets::
-;main.c:38: for (UINT8 i = 0; i < MAX_BULLETS; i++) {
+;main.c:50: for (UINT8 i = 0; i < MAX_BULLETS; i++) {
 	ld	c, #0x00
 00103$:
 	ld	a, c
 	sub	a, #0x0a
 	ret	NC
-;main.c:39: bullets[i].x = 0;
+;main.c:51: bullets[i].x = 0;
 	ld	b, #0x00
 	ld	l, c
 	ld	h, b
@@ -120,7 +148,7 @@ _initialize_bullets::
 	ld	d, a
 	xor	a, a
 	ld	(de), a
-;main.c:40: bullets[i].y = 0;
+;main.c:52: bullets[i].y = 0;
 	ld	l, e
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -129,7 +157,7 @@ _initialize_bullets::
 ;	spillPairReg hl
 	inc	hl
 	ld	(hl), #0x00
-;main.c:41: bullets[i].directionX = 0; // Initialiser à 0
+;main.c:53: bullets[i].directionX = 0; // Initialiser à 0
 	ld	l, e
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -139,7 +167,7 @@ _initialize_bullets::
 	inc	hl
 	inc	hl
 	ld	(hl), #0x00
-;main.c:42: bullets[i].directionY = 0; // Initialiser à 0
+;main.c:54: bullets[i].directionY = 0; // Initialiser à 0
 	ld	l, e
 ;	spillPairReg hl
 ;	spillPairReg hl
@@ -150,29 +178,29 @@ _initialize_bullets::
 	inc	hl
 	inc	hl
 	ld	(hl), #0x00
-;main.c:43: bullets[i].active = 0;
+;main.c:55: bullets[i].active = 0;
 	ld	hl, #0x0004
 	add	hl, de
 	ld	(hl), #0x00
-;main.c:44: bullets[i].animationCounter = 0;
+;main.c:56: bullets[i].animationCounter = 0;
 	ld	hl, #0x0005
 	add	hl, de
 	ld	(hl), #0x00
-;main.c:45: bullets[i].spriteIndex = 0;
+;main.c:57: bullets[i].spriteIndex = 0;
 	ld	hl, #0x0006
 	add	hl, de
 	ld	(hl), #0x00
-;main.c:38: for (UINT8 i = 0; i < MAX_BULLETS; i++) {
+;main.c:50: for (UINT8 i = 0; i < MAX_BULLETS; i++) {
 	inc	c
-;main.c:47: }
+;main.c:59: }
 	jr	00103$
-;main.c:50: void fire_bullets() {
+;main.c:62: void fire_bullets() {
 ;	---------------------------------
 ; Function fire_bullets
 ; ---------------------------------
 _fire_bullets::
 	add	sp, #-14
-;main.c:51: for (UINT8 i = 0; i < MAX_BULLETS; i += 2) {
+;main.c:63: for (UINT8 i = 0; i < MAX_BULLETS; i += 2) {
 	ldhl	sp,	#13
 	ld	(hl), #0x00
 00110$:
@@ -180,7 +208,7 @@ _fire_bullets::
 	ld	a, (hl)
 	sub	a, #0x0a
 	jp	NC, 00112$
-;main.c:52: if (!bullets[i].active && !bullets[i + 1].active) {
+;main.c:64: if (!bullets[i].active && !bullets[i + 1].active) {
 	ld	c, (hl)
 	ld	b, #0x00
 	ld	l, c
@@ -245,12 +273,12 @@ _fire_bullets::
 	ld	a, (bc)
 	or	a, a
 	jp	NZ, 00111$
-;main.c:53: bullets[i].x = hero_x;
+;main.c:65: bullets[i].x = hero_x;
 	pop	de
 	push	de
 	ld	a, (#_hero_x)
 	ld	(de), a
-;main.c:54: bullets[i].y = hero_y;
+;main.c:66: bullets[i].y = hero_y;
 	pop	de
 	push	de
 	ld	l, e
@@ -269,33 +297,33 @@ _fire_bullets::
 	ld	d, (hl)
 	ld	a, (#_hero_y)
 	ld	(de), a
-;main.c:55: bullets[i].directionX = -1; // Gauche
+;main.c:67: bullets[i].directionX = -1; // Gauche
 	pop	hl
 	push	hl
 	inc	hl
 	inc	hl
 	ld	(hl), #0xff
-;main.c:56: bullets[i].directionY = -1; // Haut
+;main.c:68: bullets[i].directionY = -1; // Haut
 	pop	hl
 	push	hl
 	inc	hl
 	inc	hl
 	inc	hl
 	ld	(hl), #0xff
-;main.c:57: bullets[i].active = 1;
+;main.c:69: bullets[i].active = 1;
 	ldhl	sp,	#11
 	ld	a,	(hl+)
 	ld	h, (hl)
 	ld	l, a
 	ld	(hl), #0x01
-;main.c:59: bullets[i + 1].x = hero_x;
+;main.c:71: bullets[i + 1].x = hero_x;
 	ldhl	sp,#2
 	ld	a, (hl+)
 	ld	e, a
 	ld	d, (hl)
 	ld	a, (#_hero_x)
 	ld	(de), a
-;main.c:60: bullets[i + 1].y = hero_y;
+;main.c:72: bullets[i + 1].y = hero_y;
 	ldhl	sp,#2
 	ld	a, (hl+)
 	ld	e, a
@@ -316,7 +344,7 @@ _fire_bullets::
 	ld	d, (hl)
 	ld	a, (#_hero_y)
 	ld	(de), a
-;main.c:61: bullets[i + 1].directionX = 1; // Droite
+;main.c:73: bullets[i + 1].directionX = 1; // Droite
 	ldhl	sp,	#2
 	ld	a, (hl+)
 	ld	h, (hl)
@@ -328,7 +356,7 @@ _fire_bullets::
 	inc	hl
 	inc	hl
 	ld	(hl), #0x01
-;main.c:62: bullets[i + 1].directionY = 1; // Bas
+;main.c:74: bullets[i + 1].directionY = 1; // Bas
 	ldhl	sp,	#2
 	ld	a, (hl+)
 	ld	h, (hl)
@@ -341,10 +369,10 @@ _fire_bullets::
 	inc	hl
 	inc	hl
 	ld	(hl), #0x01
-;main.c:63: bullets[i + 1].active = 1;
+;main.c:75: bullets[i + 1].active = 1;
 	ld	a, #0x01
 	ld	(bc), a
-;main.c:66: set_sprite_tile(8 + i, 16);      // Première frame (bullet) pour la gauche
+;main.c:78: set_sprite_tile(8 + i, 16);      // Première frame (bullet) pour la gauche
 	ldhl	sp,	#13
 	ld	a, (hl)
 	add	a, #0x08
@@ -391,7 +419,7 @@ _fire_bullets::
 	ld	h, (hl)
 	ld	l, a
 	ld	(hl), #0x10
-;main.c:67: set_sprite_tile(8 + i + 1, 17);  // Deuxième frame (bullet2) pour la droite
+;main.c:79: set_sprite_tile(8 + i + 1, 17);  // Deuxième frame (bullet2) pour la droite
 	ldhl	sp,	#13
 	ld	a, (hl)
 	add	a, #0x09
@@ -442,7 +470,7 @@ _fire_bullets::
 	ld	h, (hl)
 	ld	l, a
 	ld	(hl), #0x11
-;main.c:69: move_sprite(8 + i, bullets[i].x, bullets[i].y);
+;main.c:81: move_sprite(8 + i, bullets[i].x, bullets[i].y);
 	ldhl	sp,#4
 	ld	a, (hl+)
 	ld	e, a
@@ -521,7 +549,7 @@ _fire_bullets::
 	ldhl	sp,	#12
 	ld	a, (hl)
 	ld	(de), a
-;main.c:70: move_sprite(8 + i + 1, bullets[i + 1].x, bullets[i + 1].y);
+;main.c:82: move_sprite(8 + i + 1, bullets[i + 1].x, bullets[i + 1].y);
 	ldhl	sp,#6
 	ld	a, (hl+)
 	ld	e, a
@@ -602,25 +630,25 @@ _fire_bullets::
 	ldhl	sp,	#12
 	ld	a, (hl)
 	ld	(de), a
-;main.c:71: return;
+;main.c:83: return;
 	jr	00112$
 00111$:
-;main.c:51: for (UINT8 i = 0; i < MAX_BULLETS; i += 2) {
+;main.c:63: for (UINT8 i = 0; i < MAX_BULLETS; i += 2) {
 	ldhl	sp,	#13
 	inc	(hl)
 	inc	(hl)
 	jp	00110$
 00112$:
-;main.c:74: }
+;main.c:86: }
 	add	sp, #14
 	ret
-;main.c:77: void update_bullets() {
+;main.c:89: void update_bullets() {
 ;	---------------------------------
 ; Function update_bullets
 ; ---------------------------------
 _update_bullets::
 	add	sp, #-9
-;main.c:78: for (UINT8 i = 0; i < MAX_BULLETS; i++) {
+;main.c:90: for (UINT8 i = 0; i < MAX_BULLETS; i++) {
 	ldhl	sp,	#8
 	ld	(hl), #0x00
 00119$:
@@ -628,7 +656,7 @@ _update_bullets::
 	ld	a, (hl)
 	sub	a, #0x0a
 	jp	NC, 00121$
-;main.c:79: if (bullets[i].active) {
+;main.c:91: if (bullets[i].active) {
 	ld	c, (hl)
 	ld	b, #0x00
 	ld	l, c
@@ -657,7 +685,7 @@ _update_bullets::
 	ld	a, (bc)
 	or	a, a
 	jp	Z, 00120$
-;main.c:80: bullets[i].x += bullets[i].directionX * 4; // Mise à jour de la position X
+;main.c:92: bullets[i].x += bullets[i].directionX * 4; // Mise à jour de la position X
 	ldhl	sp,#4
 	ld	a, (hl+)
 	ld	e, a
@@ -679,7 +707,7 @@ _update_bullets::
 	ld	l, (hl)
 	ld	h, a
 	ld	(hl), c
-;main.c:81: bullets[i].y += bullets[i].directionY * 4; // Mise à jour de la position Y
+;main.c:93: bullets[i].y += bullets[i].directionY * 4; // Mise à jour de la position Y
 	ldhl	sp,	#4
 	ld	a, (hl+)
 	ld	c, a
@@ -702,7 +730,7 @@ _update_bullets::
 	add	a, a
 	add	a, e
 	ld	(bc), a
-;main.c:83: move_sprite(8 + i, bullets[i].x, bullets[i].y);
+;main.c:95: move_sprite(8 + i, bullets[i].x, bullets[i].y);
 	ld	a, (bc)
 	ld	c, a
 	ldhl	sp,#4
@@ -733,7 +761,7 @@ _update_bullets::
 	ld	c, l
 	ld	b, h
 	ldhl	sp,	#7
-;main.c:86: bullets[i].animationCounter++;
+;main.c:98: bullets[i].animationCounter++;
 	ld	a, (hl-)
 	dec	hl
 	dec	hl
@@ -749,11 +777,11 @@ _update_bullets::
 	inc	a
 	ld	e, a
 	ld	(bc), a
-;main.c:87: if (bullets[i].animationCounter > 1) {
+;main.c:99: if (bullets[i].animationCounter > 1) {
 	ld	a, #0x01
 	sub	a, e
 	jr	NC, 00102$
-;main.c:88: bullets[i].spriteIndex = bullets[i].spriteIndex == 0 ? 1 : 0;
+;main.c:100: bullets[i].spriteIndex = bullets[i].spriteIndex == 0 ? 1 : 0;
 	ldhl	sp,#4
 	ld	a, (hl+)
 	ld	e, a
@@ -782,7 +810,7 @@ _update_bullets::
 	ld	h, (hl)
 	ld	l, a
 	ld	(hl), c
-;main.c:89: set_sprite_tile(8 + i, 16 + bullets[i].spriteIndex);
+;main.c:101: set_sprite_tile(8 + i, 16 + bullets[i].spriteIndex);
 	ldhl	sp,	#8
 	ld	c, (hl)
 	ld	b, #0x00
@@ -823,12 +851,12 @@ _update_bullets::
 	ldhl	sp,	#7
 	ld	a, (hl)
 	ld	(de), a
-;main.c:90: bullets[i].animationCounter = 0;
+;main.c:102: bullets[i].animationCounter = 0;
 	ld	hl, #0x0005
 	add	hl, bc
 	ld	(hl), #0x00
 00102$:
-;main.c:94: if (bullets[i].x > 160 || bullets[i].x < 0 ||
+;main.c:106: if (bullets[i].x > 160 || bullets[i].x < 0 ||
 	ldhl	sp,	#8
 	ld	c, (hl)
 	ld	b, #0x00
@@ -857,7 +885,7 @@ _update_bullets::
 	ld	a, #0xa0
 	sub	a, (hl)
 	jp	C, 00103$
-;main.c:95: bullets[i].y > 160 || bullets[i].y < 0 || // Vérification de la limite Y
+;main.c:107: bullets[i].y > 160 || bullets[i].y < 0 || // Vérification de la limite Y
 	ldhl	sp,	#1
 	ld	a, (hl+)
 	ld	c, a
@@ -869,7 +897,7 @@ _update_bullets::
 	ld	a, #0xa0
 	sub	a, (hl)
 	jp	C, 00103$
-;main.c:96: (bullets[i].x > enemy_x - 8 && bullets[i].x < enemy_x + 8 &&
+;main.c:108: (bullets[i].x > enemy_x - 8 && bullets[i].x < enemy_x + 8 &&
 	ld	hl, #_enemy_x
 	ld	c, (hl)
 	ld	b, #0x00
@@ -933,7 +961,7 @@ _update_bullets::
 	scf
 00199$:
 	jr	NC, 00120$
-;main.c:97: bullets[i].y > enemy_y - 8 && bullets[i].y < enemy_y + 8)) {
+;main.c:109: bullets[i].y > enemy_y - 8 && bullets[i].y < enemy_y + 8)) {
 	ld	hl, #_enemy_y
 	ld	c, (hl)
 	ld	b, #0x00
@@ -999,7 +1027,7 @@ _update_bullets::
 00203$:
 	jr	NC, 00120$
 00103$:
-;main.c:98: bullets[i].active = 0;
+;main.c:110: bullets[i].active = 0;
 	ldhl	sp,#1
 	ld	a, (hl+)
 	ld	e, a
@@ -1010,7 +1038,7 @@ _update_bullets::
 	ld	b, h
 	xor	a, a
 	ld	(bc), a
-;main.c:99: move_sprite(8 + i, 0, 0); // Déplace le sprite hors écran
+;main.c:111: move_sprite(8 + i, 0, 0); // Déplace le sprite hors écran
 	ldhl	sp,	#0
 	ld	c, (hl)
 ;c:\gbdk\include\gb\gb.h:1961: OAM_item_t * itm = &shadow_OAM[nb];
@@ -1025,26 +1053,26 @@ _update_bullets::
 	xor	a, a
 	ld	(hl+), a
 	ld	(hl), a
-;main.c:99: move_sprite(8 + i, 0, 0); // Déplace le sprite hors écran
+;main.c:111: move_sprite(8 + i, 0, 0); // Déplace le sprite hors écran
 00120$:
-;main.c:78: for (UINT8 i = 0; i < MAX_BULLETS; i++) {
+;main.c:90: for (UINT8 i = 0; i < MAX_BULLETS; i++) {
 	ldhl	sp,	#8
 	inc	(hl)
 	jp	00119$
 00121$:
-;main.c:103: }
+;main.c:115: }
 	add	sp, #9
 	ret
-;main.c:106: void update_enemy_sprite() {
+;main.c:118: void update_enemy_sprite() {
 ;	---------------------------------
 ; Function update_enemy_sprite
 ; ---------------------------------
 _update_enemy_sprite::
-;main.c:107: int move_x = 0;
-;main.c:108: int move_y = 0;
+;main.c:119: int move_x = 0;
+;main.c:120: int move_y = 0;
 	ld	c, #0x00
 	ld	d, c
-;main.c:110: if (enemy_x < hero_x) move_x = 1;
+;main.c:122: if (enemy_x < hero_x) move_x = 1;
 	ld	a, (#_enemy_x)
 	ld	hl, #_hero_x
 	sub	a, (hl)
@@ -1052,14 +1080,14 @@ _update_enemy_sprite::
 	ld	c, #0x01
 	jr	00105$
 00104$:
-;main.c:111: else if (enemy_x > hero_x) move_x = -1;
+;main.c:123: else if (enemy_x > hero_x) move_x = -1;
 	ld	a, (#_hero_x)
 	ld	hl, #_enemy_x
 	sub	a, (hl)
 	jr	NC, 00105$
 	ld	c, #0xff
 00105$:
-;main.c:113: if (enemy_y < hero_y) move_y = 1;
+;main.c:125: if (enemy_y < hero_y) move_y = 1;
 	ld	a, (#_enemy_y)
 	ld	hl, #_hero_y
 	sub	a, (hl)
@@ -1067,14 +1095,14 @@ _update_enemy_sprite::
 	ld	d, #0x01
 	jr	00110$
 00109$:
-;main.c:114: else if (enemy_y > hero_y) move_y = -1;
+;main.c:126: else if (enemy_y > hero_y) move_y = -1;
 	ld	a, (#_hero_y)
 	ld	hl, #_enemy_y
 	sub	a, (hl)
 	jr	NC, 00110$
 	ld	d, #0xff
 00110$:
-;main.c:116: enemy_x += move_x * 2 * enemySpeed;
+;main.c:128: enemy_x += move_x * 2 * enemySpeed;
 	sla	c
 	push	de
 	ld	hl, #_enemySpeed
@@ -1086,7 +1114,7 @@ _update_enemy_sprite::
 	ld	a, (hl)
 	add	a, c
 	ld	(hl), a
-;main.c:117: enemy_y += move_y * 2 * enemySpeed;
+;main.c:129: enemy_y += move_y * 2 * enemySpeed;
 	sla	d
 	ld	hl, #_enemySpeed
 	ld	e, (hl)
@@ -1096,35 +1124,35 @@ _update_enemy_sprite::
 	ld	a, (hl)
 	add	a, c
 	ld	(hl), a
-;main.c:119: if (enemy_x > 150) enemy_x = 150;
+;main.c:131: if (enemy_x > 150) enemy_x = 150;
 	ld	a, #0x96
 	ld	hl, #_enemy_x
 	sub	a, (hl)
 	jr	NC, 00112$
 	ld	(hl), #0x96
 00112$:
-;main.c:120: if (enemy_x < 10) enemy_x = 10;
+;main.c:132: if (enemy_x < 10) enemy_x = 10;
 	ld	hl, #_enemy_x
 	ld	a, (hl)
 	sub	a, #0x0a
 	jr	NC, 00114$
 	ld	(hl), #0x0a
 00114$:
-;main.c:121: if (enemy_y > 140) enemy_y = 140;
+;main.c:133: if (enemy_y > 140) enemy_y = 140;
 	ld	a, #0x8c
 	ld	hl, #_enemy_y
 	sub	a, (hl)
 	jr	NC, 00116$
 	ld	(hl), #0x8c
 00116$:
-;main.c:122: if (enemy_y < 10) enemy_y = 10;
+;main.c:134: if (enemy_y < 10) enemy_y = 10;
 	ld	hl, #_enemy_y
 	ld	a, (hl)
 	sub	a, #0x0a
 	jr	NC, 00118$
 	ld	(hl), #0x0a
 00118$:
-;main.c:124: move_sprite(4, enemy_x, enemy_y);
+;main.c:136: move_sprite(4, enemy_x, enemy_y);
 	ld	hl, #_enemy_y
 	ld	b, (hl)
 	ld	hl, #_enemy_x
@@ -1135,7 +1163,7 @@ _update_enemy_sprite::
 	ld	a, b
 	ld	(hl+), a
 	ld	(hl), c
-;main.c:125: move_sprite(5, enemy_x + 8, enemy_y);
+;main.c:137: move_sprite(5, enemy_x + 8, enemy_y);
 	ld	hl, #_enemy_y
 	ld	b, (hl)
 	ld	a, (#_enemy_x)
@@ -1147,7 +1175,7 @@ _update_enemy_sprite::
 	ld	a, b
 	ld	(hl+), a
 	ld	(hl), c
-;main.c:126: move_sprite(6, enemy_x, enemy_y + 8);
+;main.c:138: move_sprite(6, enemy_x, enemy_y + 8);
 	ld	a, (#_enemy_y)
 	add	a, #0x08
 	ld	b, a
@@ -1159,7 +1187,7 @@ _update_enemy_sprite::
 	ld	a, b
 	ld	(hl+), a
 	ld	(hl), c
-;main.c:127: move_sprite(7, enemy_x + 8, enemy_y + 8);
+;main.c:139: move_sprite(7, enemy_x + 8, enemy_y + 8);
 	ld	a, (#_enemy_y)
 	add	a, #0x08
 	ld	b, a
@@ -1172,14 +1200,14 @@ _update_enemy_sprite::
 	ld	a, b
 	ld	(hl+), a
 	ld	(hl), c
-;main.c:129: enemyAnimationCounter++;
+;main.c:141: enemyAnimationCounter++;
 	ld	hl, #_enemyAnimationCounter
 	inc	(hl)
-;main.c:131: if (enemyAnimationCounter > 1) {
+;main.c:143: if (enemyAnimationCounter > 1) {
 	ld	a, #0x01
 	sub	a, (hl)
 	ret	NC
-;main.c:132: if (enemySpriteIndex == 0) {
+;main.c:144: if (enemySpriteIndex == 0) {
 	ld	a, (#_enemySpriteIndex)
 	or	a, a
 	jr	NZ, 00120$
@@ -1192,7 +1220,7 @@ _update_enemy_sprite::
 	ld	(hl), #0x0a
 	ld	hl, #(_shadow_OAM + 30)
 	ld	(hl), #0x0b
-;main.c:137: enemySpriteIndex = 1;
+;main.c:149: enemySpriteIndex = 1;
 	ld	hl, #_enemySpriteIndex
 	ld	(hl), #0x01
 	jr	00121$
@@ -1206,86 +1234,86 @@ _update_enemy_sprite::
 	ld	(hl), #0x0e
 	ld	hl, #(_shadow_OAM + 30)
 	ld	(hl), #0x0f
-;main.c:143: enemySpriteIndex = 0;
+;main.c:155: enemySpriteIndex = 0;
 	ld	hl, #_enemySpriteIndex
 	ld	(hl), #0x00
 00121$:
-;main.c:145: enemyAnimationCounter = 0;
+;main.c:157: enemyAnimationCounter = 0;
 	ld	hl, #_enemyAnimationCounter
 	ld	(hl), #0x00
-;main.c:147: }
+;main.c:159: }
 	ret
-;main.c:150: void update_hero_sprite() {
+;main.c:162: void update_hero_sprite() {
 ;	---------------------------------
 ; Function update_hero_sprite
 ; ---------------------------------
 _update_hero_sprite::
-;main.c:151: UINT8 move_x = 0;
-;main.c:152: UINT8 move_y = 0;
+;main.c:163: UINT8 move_x = 0;
+;main.c:164: UINT8 move_y = 0;
 	ld	bc, #0x0
-;main.c:154: if (joypad() & J_LEFT) move_x = -8;
+;main.c:166: if (joypad() & J_LEFT) move_x = -8;
 	call	_joypad
 	bit	1, a
 	jr	Z, 00102$
 	ld	b, #0xf8
 00102$:
-;main.c:155: if (joypad() & J_RIGHT) move_x = 8;
+;main.c:167: if (joypad() & J_RIGHT) move_x = 8;
 	call	_joypad
 	rrca
 	jr	NC, 00104$
 	ld	b, #0x08
 00104$:
-;main.c:156: if (joypad() & J_UP) move_y = -8;
+;main.c:168: if (joypad() & J_UP) move_y = -8;
 	call	_joypad
 	bit	2, a
 	jr	Z, 00106$
 	ld	c, #0xf8
 00106$:
-;main.c:157: if (joypad() & J_DOWN) move_y = 8;
+;main.c:169: if (joypad() & J_DOWN) move_y = 8;
 	call	_joypad
 	bit	3, a
 	jr	Z, 00108$
 	ld	c, #0x08
 00108$:
-;main.c:159: hero_x += move_x;
+;main.c:171: hero_x += move_x;
 	ld	hl, #_hero_x
 	ld	a, (hl)
 	add	a, b
 	ld	(hl), a
-;main.c:160: hero_y += move_y;
+;main.c:172: hero_y += move_y;
 	ld	hl, #_hero_y
 	ld	a, (hl)
 	add	a, c
 	ld	(hl), a
-;main.c:162: if (hero_x > 152) hero_x = 154;
+;main.c:174: if (hero_x > 152) hero_x = 154;
 	ld	a, #0x98
 	ld	hl, #_hero_x
 	sub	a, (hl)
 	jr	NC, 00110$
 	ld	(hl), #0x9a
 00110$:
-;main.c:163: if (hero_x < 10) hero_x = 8;
+;main.c:175: if (hero_x < 10) hero_x = 8;
 	ld	hl, #_hero_x
 	ld	a, (hl)
 	sub	a, #0x0a
 	jr	NC, 00112$
 	ld	(hl), #0x08
 00112$:
-;main.c:164: if (hero_y > 144) hero_y = 144;
+;main.c:176: if (hero_y > 144) hero_y = 144;
 	ld	a, #0x90
 	ld	hl, #_hero_y
 	sub	a, (hl)
 	jr	NC, 00114$
 	ld	(hl), #0x90
 00114$:
-;main.c:165: if (hero_y < 16) hero_y = 16;
+;main.c:177: if (hero_y < 16) hero_y = 16;
 	ld	hl, #_hero_y
 	ld	a, (hl)
 	sub	a, #0x10
 	jr	NC, 00116$
 	ld	(hl), #0x10
 00116$:
-;main.c:167: move_sprite(0, hero_x, hero_y);
+;main.c:179: move_sprite(0, hero_x, hero_y);
 	ld	hl, #_hero_y
 	ld	b, (hl)
 	ld	hl, #_hero_x
@@ -1296,7 +1324,7 @@ _update_hero_sprite::
 	ld	a, b
 	ld	(hl+), a
 	ld	(hl), c
-;main.c:168: move_sprite(1, hero_x + 8, hero_y);
+;main.c:180: move_sprite(1, hero_x + 8, hero_y);
 	ld	hl, #_hero_y
 	ld	b, (hl)
 	ld	a, (#_hero_x)
@@ -1308,7 +1336,7 @@ _update_hero_sprite::
 	ld	a, b
 	ld	(hl+), a
 	ld	(hl), c
-;main.c:169: move_sprite(2, hero_x, hero_y + 8);
+;main.c:181: move_sprite(2, hero_x, hero_y + 8);
 	ld	a, (#_hero_y)
 	add	a, #0x08
 	ld	b, a
@@ -1320,7 +1348,7 @@ _update_hero_sprite::
 	ld	a, b
 	ld	(hl+), a
 	ld	(hl), c
-;main.c:170: move_sprite(3, hero_x + 8, hero_y + 8);
+;main.c:182: move_sprite(3, hero_x + 8, hero_y + 8);
 	ld	a, (#_hero_y)
 	add	a, #0x08
 	ld	b, a
@@ -1333,7 +1361,7 @@ _update_hero_sprite::
 	ld	a, b
 	ld	(hl+), a
 	ld	(hl), c
-;main.c:172: if (heroSpriteIndex == 0) {
+;main.c:184: if (heroSpriteIndex == 0) {
 	ld	a, (#_heroSpriteIndex)
 	or	a, a
 	jr	NZ, 00118$
@@ -1346,7 +1374,7 @@ _update_hero_sprite::
 	ld	(hl), #0x02
 	ld	hl, #(_shadow_OAM + 14)
 	ld	(hl), #0x03
-;main.c:177: heroSpriteIndex = 1;
+;main.c:189: heroSpriteIndex = 1;
 	ld	hl, #_heroSpriteIndex
 	ld	(hl), #0x01
 	ret
@@ -1360,31 +1388,81 @@ _update_hero_sprite::
 	ld	(hl), #0x06
 	ld	hl, #(_shadow_OAM + 14)
 	ld	(hl), #0x07
-;main.c:183: heroSpriteIndex = 0;
+;main.c:195: heroSpriteIndex = 0;
 	ld	hl, #_heroSpriteIndex
 	ld	(hl), #0x00
-;main.c:185: }
+;main.c:197: }
 	ret
-;main.c:187: void main(void) {
+;main.c:199: void main(void) {
 ;	---------------------------------
 ; Function main
 ; ---------------------------------
 _main::
-;main.c:188: set_sprite_data(0, 8, hero);
+;main.c:201: STAT_REG = 0x45;
+	ld	a, #0x45
+	ldh	(_STAT_REG + 0), a
+;main.c:202: LYC_REG = 0x08;  //  Fire LCD Interupt on the 8th scan line (just first row)
+	ld	a, #0x08
+	ldh	(_LYC_REG + 0), a
+;c:\gbdk\include\gb\gb.h:799: __asm__("di");
+	di
+;main.c:204: font_init();
+	call	_font_init
+;main.c:205: min_font = font_load(font_min); // 36 tile
+	ld	de, #_font_min
+	push	de
+	call	_font_load
+	pop	hl
+;main.c:206: font_set(min_font);
+	push	de
+	call	_font_set
+	pop	hl
+;main.c:207: set_win_tiles(0,0,5,1,windowmap);
+	ld	de, #_windowmap
+	push	de
+	ld	hl, #0x105
+	push	hl
+	xor	a, a
+	rrca
+	push	af
+	call	_set_win_tiles
+	add	sp, #6
+;c:\gbdk\include\gb\gb.h:1727: WX_REG=x, WY_REG=y;
+	ld	a, #0x07
+	ldh	(_WX_REG + 0), a
+	ld	a, #0x82
+	ldh	(_WY_REG + 0), a
+;main.c:209: SHOW_WIN;
+	ldh	a, (_LCDC_REG + 0)
+	or	a, #0x20
+	ldh	(_LCDC_REG + 0), a
+;main.c:210: DISPLAY_ON;
+	ldh	a, (_LCDC_REG + 0)
+	or	a, #0x80
+	ldh	(_LCDC_REG + 0), a
+;main.c:212: add_LCD(interruptLCD);
+	ld	de, #_interruptLCD
+	call	_add_LCD
+;c:\gbdk\include\gb\gb.h:783: __asm__("ei");
+	ei
+;main.c:214: set_interrupts(VBL_IFLAG | LCD_IFLAG);   
+	ld	a, #0x03
+	call	_set_interrupts
+;main.c:216: set_sprite_data(0, 8, hero);
 	ld	de, #_hero
 	push	de
 	ld	hl, #0x800
 	push	hl
 	call	_set_sprite_data
 	add	sp, #4
-;main.c:189: set_sprite_data(8, 8, enemy);
+;main.c:217: set_sprite_data(8, 8, enemy);
 	ld	de, #_enemy
 	push	de
 	ld	hl, #0x808
 	push	hl
 	call	_set_sprite_data
 	add	sp, #4
-;main.c:190: set_sprite_data(16, 2, bullet);
+;main.c:218: set_sprite_data(16, 2, bullet);
 	ld	de, #_bullet
 	push	de
 	ld	a, #0x02
@@ -1395,7 +1473,7 @@ _main::
 	inc	sp
 	call	_set_sprite_data
 	add	sp, #4
-;main.c:192: initialize_bullets();
+;main.c:220: initialize_bullets();
 	call	_initialize_bullets
 ;c:\gbdk\include\gb\gb.h:1875: shadow_OAM[nb].tile=tile;
 	ld	hl, #(_shadow_OAM + 18)
@@ -1406,7 +1484,7 @@ _main::
 	ld	(hl), #0x0a
 	ld	hl, #(_shadow_OAM + 30)
 	ld	(hl), #0x0b
-;main.c:198: move_sprite(4, enemy_x, enemy_y);
+;main.c:226: move_sprite(4, enemy_x, enemy_y);
 	ld	hl, #_enemy_y
 	ld	c, (hl)
 	ld	hl, #_enemy_x
@@ -1417,7 +1495,7 @@ _main::
 	ld	a, c
 	ld	(hl+), a
 	ld	(hl), b
-;main.c:199: move_sprite(5, enemy_x + 8, enemy_y);
+;main.c:227: move_sprite(5, enemy_x + 8, enemy_y);
 	ld	hl, #_enemy_y
 	ld	c, (hl)
 	ld	a, (#_enemy_x)
@@ -1429,7 +1507,7 @@ _main::
 	ld	a, c
 	ld	(hl+), a
 	ld	(hl), b
-;main.c:200: move_sprite(6, enemy_x, enemy_y + 8);
+;main.c:228: move_sprite(6, enemy_x, enemy_y + 8);
 	ld	a, (#_enemy_y)
 	add	a, #0x08
 	ld	c, a
@@ -1441,7 +1519,7 @@ _main::
 	ld	a, c
 	ld	(hl+), a
 	ld	(hl), b
-;main.c:201: move_sprite(7, enemy_x + 8, enemy_y + 8);
+;main.c:229: move_sprite(7, enemy_x + 8, enemy_y + 8);
 	ld	a, (#_enemy_y)
 	add	a, #0x08
 	ld	c, a
@@ -1454,7 +1532,7 @@ _main::
 	ld	a, c
 	ld	(hl+), a
 	ld	(hl), b
-;main.c:203: move_sprite(0, hero_x, hero_y);
+;main.c:231: move_sprite(0, hero_x, hero_y);
 	ld	hl, #_hero_y
 	ld	c, (hl)
 	ld	hl, #_hero_x
@@ -1465,7 +1543,7 @@ _main::
 	ld	a, c
 	ld	(hl+), a
 	ld	(hl), b
-;main.c:204: move_sprite(1, hero_x + 8, hero_y);
+;main.c:232: move_sprite(1, hero_x + 8, hero_y);
 	ld	hl, #_hero_y
 	ld	c, (hl)
 	ld	a, (#_hero_x)
@@ -1477,7 +1555,7 @@ _main::
 	ld	a, c
 	ld	(hl+), a
 	ld	(hl), b
-;main.c:205: move_sprite(2, hero_x, hero_y + 8);
+;main.c:233: move_sprite(2, hero_x, hero_y + 8);
 	ld	a, (#_hero_y)
 	add	a, #0x08
 	ld	c, a
@@ -1489,7 +1567,7 @@ _main::
 	ld	a, c
 	ld	(hl+), a
 	ld	(hl), b
-;main.c:206: move_sprite(3, hero_x + 8, hero_y + 8);
+;main.c:234: move_sprite(3, hero_x + 8, hero_y + 8);
 	ld	a, (#_hero_y)
 	add	a, #0x08
 	ld	c, a
@@ -1502,31 +1580,37 @@ _main::
 	ld	a, c
 	ld	(hl+), a
 	ld	(hl), b
-;main.c:208: SHOW_SPRITES;
+;main.c:236: SHOW_SPRITES;
 	ldh	a, (_LCDC_REG + 0)
 	or	a, #0x02
 	ldh	(_LCDC_REG + 0), a
-;main.c:210: while(1) {
+;main.c:238: while(1) {
 00104$:
-;main.c:211: update_enemy_sprite();
+;main.c:239: update_enemy_sprite();
 	call	_update_enemy_sprite
-;main.c:212: update_hero_sprite();
+;main.c:240: update_hero_sprite();
 	call	_update_hero_sprite
-;main.c:214: if (joypad() & J_A) fire_bullets();
+;main.c:241: if (joypad() & J_A) fire_bullets();
 	call	_joypad
 	bit	4, a
 	jr	Z, 00102$
 	call	_fire_bullets
 00102$:
-;main.c:215: update_bullets();
+;main.c:242: update_bullets();
 	call	_update_bullets
-;main.c:217: delay(100);
+;main.c:243: delay(100);
 	ld	de, #0x0064
 	call	_delay
-;main.c:219: }
+;main.c:245: }
 	jr	00104$
 	.area _CODE
 	.area _INITIALIZER
+__xinit__windowmap:
+	.db #0x1a	; 26
+	.db #0x20	; 32
+	.db #0x02	; 2
+	.db #0x01	; 1
+	.db #0x01	; 1
 __xinit__hero:
 	.db #0x08	; 8
 	.db #0x08	; 8
@@ -1837,4 +1921,6 @@ __xinit__hero_y:
 	.db #0x0a	; 10
 __xinit__heroSpriteIndex:
 	.db #0x00	; 0
+__xinit__display_win:
+	.db #0x01	; 1
 	.area _CABS (ABS)
