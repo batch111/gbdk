@@ -1,0 +1,13 @@
+{
+    "files.associations": {
+        "*.twig": "html",
+        "bug.h": "c",
+        "sprite_management.C": "cpp",
+        "sprite_management.h": "c",
+        "sprites.h": "c",
+        "gameplay.h": "c",
+        "display.h": "c",
+        "utils.h": "c",
+        "hero.h": "c"
+    }
+}
